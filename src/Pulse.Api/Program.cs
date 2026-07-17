@@ -73,6 +73,7 @@ builder.Services.AddAuthorization();
 // Rate limit /capture per write key (falling back to client IP): fixed
 // one-minute windows, no queueing — SDKs should back off and retry.
 var capturePermitLimit = builder.Configuration.GetValue("RateLimiting:Capture:PermitLimit", 300);
+var captureWindowSeconds = builder.Configuration.GetValue("RateLimiting:Capture:WindowSeconds", 60);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -85,7 +86,7 @@ builder.Services.AddRateLimiter(options =>
         return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = capturePermitLimit,
-            Window = TimeSpan.FromMinutes(1),
+            Window = TimeSpan.FromSeconds(captureWindowSeconds),
             QueueLimit = 0,
         });
     });

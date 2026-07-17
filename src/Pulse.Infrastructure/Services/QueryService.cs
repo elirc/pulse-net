@@ -155,11 +155,22 @@ public class QueryService
         var window = TimeSpan.FromDays(windowDays);
         var reachedCounts = new int[steps.Count];
 
+        // Tie-break simultaneous events by step order: two steps sharing a
+        // timestamp count as ordered progression. Without this, ties resolve
+        // by whatever order the database returned rows in (its index scan
+        // order), making conversions nondeterministic.
+        var stepIndex = new Dictionary<string, int>(steps.Count, StringComparer.Ordinal);
+        for (var i = 0; i < steps.Count; i++)
+        {
+            stepIndex.TryAdd(steps[i], i);
+        }
+
         foreach (var personEvents in events.GroupBy(e => e.PersonId))
         {
             var reached = DeepestStepReached(
                 personEvents
                     .OrderBy(e => e.Timestamp)
+                    .ThenBy(e => stepIndex[e.Name])
                     .Select(e => (e.Name, e.Timestamp)),
                 steps,
                 window);
