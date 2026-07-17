@@ -41,6 +41,7 @@ public class HardeningTests : IClassFixture<PulseApiFactory>
     [Fact]
     public async Task ValidationFailure_ReturnsFieldLevelErrors()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var project = await _client.PostAsJsonAsync("/api/projects", new { name = "Hardening" });
         var apiKey = (await project.Content.ReadFromJsonAsync<ProjectResponse>())!.ApiKey;
 

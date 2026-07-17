@@ -8,6 +8,9 @@ public record DemoSeedResult(
     Guid ProjectId,
     string ProjectName,
     string ApiKey,
+    string ReadKey,
+    string DemoUserEmail,
+    string DemoUserPassword,
     int Users,
     int Events,
     int Persons);
@@ -51,8 +54,26 @@ public class DemoDataSeeder
         {
             Name = "Demo — Hedgehog SaaS",
             ApiKey = ApiKeyGenerator.NewKey(),
+            ReadKey = ApiKeyGenerator.NewReadKey(),
         };
         _db.Projects.Add(project);
+
+        // A demo operator account so the management API is usable immediately.
+        // The email gets a random suffix so repeated seeds don't collide on
+        // the unique email index.
+        const string demoPassword = "pulse-demo";
+        var demoUser = new User
+        {
+            Email = $"demo+{Guid.NewGuid():N}@pulse.dev",
+            Name = "Demo User",
+            PasswordHash = PasswordHasher.Hash(demoPassword),
+        };
+        _db.Users.Add(demoUser);
+        _db.ProjectMemberships.Add(new ProjectMembership
+        {
+            ProjectId = project.Id,
+            UserId = demoUser.Id,
+        });
         await _db.SaveChangesAsync(ct);
 
         var end = _clock.GetUtcNow().Date; // Today at midnight UTC.
@@ -144,7 +165,8 @@ public class DemoDataSeeder
         var persons = _db.Persons.Count(p => p.ProjectId == project.Id);
 
         return new DemoSeedResult(
-            project.Id, project.Name, project.ApiKey, users, totalEvents, persons);
+            project.Id, project.Name, project.ApiKey, project.ReadKey,
+            demoUser.Email, demoPassword, users, totalEvents, persons);
     }
 
     private static string Json(object value) => JsonSerializer.Serialize(value);

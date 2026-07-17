@@ -95,6 +95,7 @@ public class InsightEndpointsTests : IClassFixture<PulseApiFactory>
     [Fact]
     public async Task Trend_UnknownProject_Returns404()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.GetAsync(
             $"/api/projects/{Guid.NewGuid()}/insights/trend?event=x");
 
@@ -307,6 +308,7 @@ public class InsightEndpointsTests : IClassFixture<PulseApiFactory>
 
     private async Task<(Guid ProjectId, string ApiKey)> CreateProjectAsync()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync(
             "/api/projects", new { name = $"Insights {Guid.NewGuid():N}" });
         response.EnsureSuccessStatusCode();
