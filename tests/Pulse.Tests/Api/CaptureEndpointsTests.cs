@@ -31,9 +31,11 @@ public class CaptureEndpointsTests : IClassFixture<PulseApiFactory>
             properties = new { url = "/pricing", plan = "free" },
         });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<CaptureResponse>();
-        Assert.Equal(1, body!.Ingested);
+        Assert.Equal("queued", body!.Status);
+        Assert.Equal(1, body.Queued);
+        await TestIngestion.WaitForDrainAsync(_client);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
@@ -60,9 +62,10 @@ public class CaptureEndpointsTests : IClassFixture<PulseApiFactory>
             },
         });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<CaptureResponse>();
-        Assert.Equal(3, body!.Ingested);
+        Assert.Equal(3, body!.Queued);
+        await TestIngestion.WaitForDrainAsync(_client);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
@@ -83,7 +86,7 @@ public class CaptureEndpointsTests : IClassFixture<PulseApiFactory>
 
         var response = await _client.SendAsync(request);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
     }
 
     [Fact]
@@ -173,6 +176,7 @@ public class CaptureEndpointsTests : IClassFixture<PulseApiFactory>
             @event = "no-ts",
             distinct_id = "u-ts",
         });
+        await TestIngestion.WaitForDrainAsync(_client);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
