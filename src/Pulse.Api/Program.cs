@@ -9,6 +9,7 @@ builder.Services.AddDbContext<PulseDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Pulse")
                       ?? "Data Source=pulse.db"));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IdentityService>();
 builder.Services.AddScoped<CaptureService>();
 
 var app = builder.Build();
@@ -28,6 +29,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 app.MapProjectEndpoints();
 app.MapCaptureEndpoints();
+app.MapPersonEndpoints();
 
 app.Run();
 
