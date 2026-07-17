@@ -1,14 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Pulse.Tests.Api;
 
-public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests : IClassFixture<PulseApiFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PulseApiFactory _factory;
 
-    public HealthEndpointTests(WebApplicationFactory<Program> factory)
+    public HealthEndpointTests(PulseApiFactory factory)
     {
         _factory = factory;
     }
