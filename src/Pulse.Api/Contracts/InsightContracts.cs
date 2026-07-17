@@ -6,7 +6,8 @@ public record FunnelRequest(
     List<string>? Steps,
     DateTimeOffset? From,
     DateTimeOffset? To,
-    int? WindowDays);
+    int? WindowDays,
+    List<PropertyFilterDto>? Filters);
 
 public record SaveInsightRequest(string? Name, string? Type, JsonElement? Config);
 

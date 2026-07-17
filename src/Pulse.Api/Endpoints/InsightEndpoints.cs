@@ -21,6 +21,9 @@ public static class InsightEndpoints
             DateTimeOffset? from,
             DateTimeOffset? to,
             string? interval,
+            string? filters,
+            string? breakdown,
+            int? breakdownLimit,
             HttpContext http,
             PulseDbContext db,
             QueryService queries,
@@ -58,8 +61,34 @@ public static class InsightEndpoints
                 });
             }
 
-            var result = await queries.TrendAsync(projectId, @event.Trim(), start, end, parsedInterval, ct);
-            return Results.Ok(result);
+            if (!FilterParsing.TryParseJson(filters, out var parsedFilters, out var filterError))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["filters"] = [filterError],
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(breakdown))
+            {
+                var result = await queries.TrendAsync(
+                    projectId, @event.Trim(), start, end, parsedInterval, parsedFilters, ct);
+                return Results.Ok(result);
+            }
+
+            var limit = breakdownLimit ?? 5;
+            if (limit is < 1 or > 25)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["breakdownLimit"] = ["breakdownLimit must be between 1 and 25."],
+                });
+            }
+
+            var breakdownResult = await queries.TrendBreakdownAsync(
+                projectId, @event.Trim(), start, end, parsedInterval,
+                breakdown.Trim(), limit, parsedFilters, ct);
+            return Results.Ok(breakdownResult);
         });
 
         group.MapPost("/funnel", async (
@@ -98,10 +127,19 @@ public static class InsightEndpoints
                 });
             }
 
+            if (!FilterParsing.TryConvert(request.Filters, out var parsedFilters, out var filterError))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["filters"] = [filterError],
+                });
+            }
+
             var end = request.To ?? DateTimeOffset.UtcNow;
             var start = request.From ?? end.AddDays(-30);
 
-            var result = await queries.FunnelAsync(projectId, steps, start, end, windowDays, ct);
+            var result = await queries.FunnelAsync(
+                projectId, steps, start, end, windowDays, parsedFilters, ct);
             return Results.Ok(result);
         });
 
@@ -110,6 +148,7 @@ public static class InsightEndpoints
             DateOnly? from,
             int? days,
             string? targetEvent,
+            string? filters,
             HttpContext http,
             PulseDbContext db,
             QueryService queries,
@@ -130,9 +169,18 @@ public static class InsightEndpoints
                 });
             }
 
+            if (!FilterParsing.TryParseJson(filters, out var parsedFilters, out var filterError))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["filters"] = [filterError],
+                });
+            }
+
             var start = from ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-(windowDays - 1));
 
-            var result = await queries.RetentionAsync(projectId, start, windowDays, targetEvent, ct);
+            var result = await queries.RetentionAsync(
+                projectId, start, windowDays, targetEvent, parsedFilters, ct);
             return Results.Ok(result);
         });
 
