@@ -18,6 +18,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IdentityService>();
 builder.Services.AddScoped<CaptureService>();
 builder.Services.AddScoped<QueryService>();
+builder.Services.AddScoped<CohortService>();
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddScoped<JwtTokenIssuer>();
 builder.Services.AddScoped<ProjectAccessService>();
@@ -114,6 +115,7 @@ app.MapProjectEndpoints();
 app.MapCaptureEndpoints();
 app.MapPersonEndpoints();
 app.MapInsightEndpoints();
+app.MapCohortEndpoints();
 
 app.Run();
 
