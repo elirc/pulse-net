@@ -52,6 +52,8 @@ public static class DashboardEndpoints
 
         group.MapGet("/", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -61,6 +63,8 @@ public static class DashboardEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var dashboards = await (
                 from d in db.Dashboards
@@ -72,7 +76,7 @@ public static class DashboardEndpoints
                     d.Name,
                     d.Description,
                     db.DashboardTiles.Count(t => t.DashboardId == d.Id),
-                    d.CreatedAt)).ToListAsync(ct);
+                    d.CreatedAt)).Skip(skip).Take(take).ToListAsync(ct);
 
             return Results.Ok(dashboards);
         });

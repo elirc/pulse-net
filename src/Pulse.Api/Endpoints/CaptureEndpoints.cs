@@ -60,7 +60,7 @@ public static class CaptureEndpoints
             signal.Ring();
 
             return Results.Accepted(value: new CaptureResponse("queued", events.Count));
-        });
+        }).RequireRateLimiting("capture");
 
         return app;
     }

@@ -90,6 +90,8 @@ public static class CohortEndpoints
 
         group.MapGet("/", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -99,10 +101,14 @@ public static class CohortEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var cohorts = await db.Cohorts
                 .Where(c => c.ProjectId == projectId)
                 .OrderBy(c => c.CreatedAt)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(ct);
 
             return Results.Ok(cohorts.Select(ToResponse));

@@ -129,6 +129,8 @@ public static partial class FeatureFlagEndpoints
 
         group.MapGet("/", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -138,10 +140,14 @@ public static partial class FeatureFlagEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var flags = await db.FeatureFlags
                 .Where(f => f.ProjectId == projectId)
                 .OrderBy(f => f.Key)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(ct);
 
             return Results.Ok(flags.Select(ToResponse));

@@ -233,6 +233,8 @@ public static class InsightEndpoints
 
         group.MapGet("/", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -242,10 +244,14 @@ public static class InsightEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var insights = await db.Insights
                 .Where(i => i.ProjectId == projectId)
                 .OrderBy(i => i.CreatedAt)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(ct);
 
             return Results.Ok(insights.Select(ToResponse));
