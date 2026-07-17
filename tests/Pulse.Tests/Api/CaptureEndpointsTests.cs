@@ -182,6 +182,7 @@ public class CaptureEndpointsTests : IClassFixture<PulseApiFactory>
 
     private async Task<string> CreateProjectAsync(string name)
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync("/api/projects", new { name });
         response.EnsureSuccessStatusCode();
         var project = await response.Content.ReadFromJsonAsync<ProjectResponse>();

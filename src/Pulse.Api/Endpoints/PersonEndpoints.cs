@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Pulse.Api.Auth;
 using Pulse.Api.Contracts;
 using Pulse.Domain.Entities;
 using Pulse.Infrastructure;
@@ -12,8 +13,20 @@ public static class PersonEndpoints
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}/persons");
 
-        group.MapGet("/", async (Guid projectId, int? limit, int? offset, PulseDbContext db) =>
+        group.MapGet("/", async (
+            Guid projectId,
+            int? limit,
+            int? offset,
+            HttpContext http,
+            PulseDbContext db,
+            ProjectAccessService access,
+            CancellationToken ct) =>
         {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
+            {
+                return denied;
+            }
+
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
@@ -22,7 +35,7 @@ public static class PersonEndpoints
                 .OrderBy(p => p.CreatedAt)
                 .Skip(skip)
                 .Take(take)
-                .ToListAsync();
+                .ToListAsync(ct);
 
             var responses = new List<PersonResponse>(persons.Count);
             foreach (var person in persons)
@@ -33,27 +46,49 @@ public static class PersonEndpoints
             return Results.Ok(responses);
         });
 
-        group.MapGet("/{personId:guid}", async (Guid projectId, Guid personId, PulseDbContext db) =>
+        group.MapGet("/{personId:guid}", async (
+            Guid projectId,
+            Guid personId,
+            HttpContext http,
+            PulseDbContext db,
+            ProjectAccessService access,
+            CancellationToken ct) =>
         {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
+            {
+                return denied;
+            }
+
             var person = await db.Persons
-                .SingleOrDefaultAsync(p => p.ProjectId == projectId && p.Id == personId);
+                .SingleOrDefaultAsync(p => p.ProjectId == projectId && p.Id == personId, ct);
 
             return person is null
                 ? Results.NotFound()
                 : Results.Ok(await ToResponseAsync(person, db));
         });
 
-        group.MapGet("/by-distinct-id/{distinctId}", async (Guid projectId, string distinctId, PulseDbContext db) =>
+        group.MapGet("/by-distinct-id/{distinctId}", async (
+            Guid projectId,
+            string distinctId,
+            HttpContext http,
+            PulseDbContext db,
+            ProjectAccessService access,
+            CancellationToken ct) =>
         {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
+            {
+                return denied;
+            }
+
             var mapping = await db.PersonDistinctIds
-                .SingleOrDefaultAsync(m => m.ProjectId == projectId && m.DistinctId == distinctId);
+                .SingleOrDefaultAsync(m => m.ProjectId == projectId && m.DistinctId == distinctId, ct);
 
             if (mapping is null)
             {
                 return Results.NotFound();
             }
 
-            var person = await db.Persons.SingleAsync(p => p.Id == mapping.PersonId);
+            var person = await db.Persons.SingleAsync(p => p.Id == mapping.PersonId, ct);
             return Results.Ok(await ToResponseAsync(person, db));
         });
 

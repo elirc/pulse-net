@@ -88,7 +88,12 @@ public class DateTimeOffsetConversionTests : IDisposable
 
     private Project SeedProject()
     {
-        var project = new Project { Name = "Test", ApiKey = Pulse.Domain.ApiKeyGenerator.NewKey() };
+        var project = new Project
+        {
+            Name = "Test",
+            ApiKey = Pulse.Domain.ApiKeyGenerator.NewKey(),
+            ReadKey = Pulse.Domain.ApiKeyGenerator.NewReadKey(),
+        };
         _db.Projects.Add(project);
         _db.SaveChanges();
         return project;

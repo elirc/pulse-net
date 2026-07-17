@@ -14,8 +14,9 @@ public class ProjectEndpointsTests : IClassFixture<PulseApiFactory>
     }
 
     [Fact]
-    public async Task CreateProject_Returns201_WithGeneratedApiKey()
+    public async Task CreateProject_Returns201_WithGeneratedApiKeys()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync("/api/projects", new { name = "My App" });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -23,12 +24,22 @@ public class ProjectEndpointsTests : IClassFixture<PulseApiFactory>
         Assert.NotNull(project);
         Assert.Equal("My App", project.Name);
         Assert.StartsWith("pk_live_", project.ApiKey);
+        Assert.StartsWith("rk_live_", project.ReadKey);
         Assert.NotEqual(Guid.Empty, project.Id);
+    }
+
+    [Fact]
+    public async Task CreateProject_WithoutAuth_Returns401()
+    {
+        var response = await _client.PostAsJsonAsync("/api/projects", new { name = "No Auth" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task CreateProject_WithBlankName_ReturnsValidationProblem()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync("/api/projects", new { name = "  " });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -49,6 +60,7 @@ public class ProjectEndpointsTests : IClassFixture<PulseApiFactory>
     [Fact]
     public async Task GetProject_UnknownId_Returns404()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.GetAsync($"/api/projects/{Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -67,6 +79,7 @@ public class ProjectEndpointsTests : IClassFixture<PulseApiFactory>
 
     private async Task<ProjectResponse> CreateAsync(string name)
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync("/api/projects", new { name });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ProjectResponse>())!;

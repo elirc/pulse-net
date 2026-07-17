@@ -21,6 +21,12 @@ public class PulseDbContext : DbContext
 
     public DbSet<Insight> Insights => Set<Insight>();
 
+    public DbSet<User> Users => Set<User>();
+
+    public DbSet<ProjectMembership> ProjectMemberships => Set<ProjectMembership>();
+
+    public DbSet<PersonalApiKey> PersonalApiKeys => Set<PersonalApiKey>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // SQLite stores DateTimeOffset as TEXT and cannot order/compare it
@@ -38,6 +44,31 @@ public class PulseDbContext : DbContext
             b.Property(p => p.Name).HasMaxLength(200);
             b.Property(p => p.ApiKey).HasMaxLength(64);
             b.HasIndex(p => p.ApiKey).IsUnique();
+            b.Property(p => p.ReadKey).HasMaxLength(64);
+            b.HasIndex(p => p.ReadKey).IsUnique();
+        });
+
+        modelBuilder.Entity<User>(b =>
+        {
+            b.Property(u => u.Email).HasMaxLength(320);
+            b.Property(u => u.Name).HasMaxLength(200);
+            b.Property(u => u.PasswordHash).HasMaxLength(200);
+            b.HasIndex(u => u.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<ProjectMembership>(b =>
+        {
+            b.HasIndex(m => new { m.ProjectId, m.UserId }).IsUnique();
+            b.HasIndex(m => m.UserId);
+        });
+
+        modelBuilder.Entity<PersonalApiKey>(b =>
+        {
+            b.Property(k => k.Name).HasMaxLength(200);
+            b.Property(k => k.KeyHash).HasMaxLength(64);
+            b.Property(k => k.KeySuffix).HasMaxLength(4);
+            b.HasIndex(k => k.KeyHash).IsUnique();
+            b.HasIndex(k => k.UserId);
         });
 
         modelBuilder.Entity<AnalyticsEvent>(b =>

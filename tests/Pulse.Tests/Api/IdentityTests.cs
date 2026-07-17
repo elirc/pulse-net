@@ -224,6 +224,7 @@ public class IdentityTests : IClassFixture<PulseApiFactory>
 
     private async Task<(Guid ProjectId, string ApiKey)> CreateProjectAsync()
     {
+        await TestAuth.AuthenticateAsync(_client);
         var response = await _client.PostAsJsonAsync(
             "/api/projects", new { name = $"Identity {Guid.NewGuid():N}" });
         response.EnsureSuccessStatusCode();

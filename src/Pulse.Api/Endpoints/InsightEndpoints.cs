@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Pulse.Api.Auth;
 using Pulse.Api.Contracts;
 using Pulse.Domain;
 using Pulse.Domain.Entities;
@@ -20,13 +21,15 @@ public static class InsightEndpoints
             DateTimeOffset? from,
             DateTimeOffset? to,
             string? interval,
+            HttpContext http,
             PulseDbContext db,
             QueryService queries,
+            ProjectAccessService access,
             CancellationToken ct) =>
         {
-            if (!await ProjectExistsAsync(db, projectId, ct))
+            if (await access.RequireReadAsync(http, projectId, ct) is { } denied)
             {
-                return Results.NotFound();
+                return denied;
             }
 
             if (string.IsNullOrWhiteSpace(@event))
@@ -62,13 +65,15 @@ public static class InsightEndpoints
         group.MapPost("/funnel", async (
             Guid projectId,
             FunnelRequest request,
+            HttpContext http,
             PulseDbContext db,
             QueryService queries,
+            ProjectAccessService access,
             CancellationToken ct) =>
         {
-            if (!await ProjectExistsAsync(db, projectId, ct))
+            if (await access.RequireReadAsync(http, projectId, ct) is { } denied)
             {
-                return Results.NotFound();
+                return denied;
             }
 
             var steps = request.Steps?
@@ -105,13 +110,15 @@ public static class InsightEndpoints
             DateOnly? from,
             int? days,
             string? targetEvent,
+            HttpContext http,
             PulseDbContext db,
             QueryService queries,
+            ProjectAccessService access,
             CancellationToken ct) =>
         {
-            if (!await ProjectExistsAsync(db, projectId, ct))
+            if (await access.RequireReadAsync(http, projectId, ct) is { } denied)
             {
-                return Results.NotFound();
+                return denied;
             }
 
             var windowDays = days ?? 7;
@@ -132,12 +139,14 @@ public static class InsightEndpoints
         group.MapPost("/", async (
             Guid projectId,
             SaveInsightRequest request,
+            HttpContext http,
             PulseDbContext db,
+            ProjectAccessService access,
             CancellationToken ct) =>
         {
-            if (!await ProjectExistsAsync(db, projectId, ct))
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
             {
-                return Results.NotFound();
+                return denied;
             }
 
             var errors = new Dictionary<string, string[]>();
@@ -174,11 +183,16 @@ public static class InsightEndpoints
                 ToResponse(insight));
         });
 
-        group.MapGet("/", async (Guid projectId, PulseDbContext db, CancellationToken ct) =>
+        group.MapGet("/", async (
+            Guid projectId,
+            HttpContext http,
+            PulseDbContext db,
+            ProjectAccessService access,
+            CancellationToken ct) =>
         {
-            if (!await ProjectExistsAsync(db, projectId, ct))
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
             {
-                return Results.NotFound();
+                return denied;
             }
 
             var insights = await db.Insights
@@ -192,9 +206,16 @@ public static class InsightEndpoints
         group.MapGet("/{insightId:guid}", async (
             Guid projectId,
             Guid insightId,
+            HttpContext http,
             PulseDbContext db,
+            ProjectAccessService access,
             CancellationToken ct) =>
         {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
+            {
+                return denied;
+            }
+
             var insight = await db.Insights
                 .SingleOrDefaultAsync(i => i.ProjectId == projectId && i.Id == insightId, ct);
 
@@ -203,9 +224,6 @@ public static class InsightEndpoints
 
         return app;
     }
-
-    private static Task<bool> ProjectExistsAsync(PulseDbContext db, Guid projectId, CancellationToken ct) =>
-        db.Projects.AnyAsync(p => p.Id == projectId, ct);
 
     private static bool TryParseInterval(string? raw, out TrendInterval interval)
     {
