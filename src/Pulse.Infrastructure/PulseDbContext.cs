@@ -31,6 +31,10 @@ public class PulseDbContext : DbContext
 
     public DbSet<FeatureFlag> FeatureFlags => Set<FeatureFlag>();
 
+    public DbSet<Dashboard> Dashboards => Set<Dashboard>();
+
+    public DbSet<DashboardTile> DashboardTiles => Set<DashboardTile>();
+
     public DbSet<CohortPerson> CohortPersons => Set<CohortPerson>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -95,6 +99,18 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<Dashboard>(b =>
+        {
+            b.Property(d => d.Name).HasMaxLength(200);
+            b.Property(d => d.Description).HasMaxLength(2000);
+            b.HasIndex(d => d.ProjectId);
+        });
+
+        modelBuilder.Entity<DashboardTile>(b =>
+        {
+            b.HasIndex(t => t.DashboardId);
         });
 
         modelBuilder.Entity<FeatureFlag>(b =>
