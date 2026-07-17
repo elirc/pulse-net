@@ -11,6 +11,7 @@ builder.Services.AddDbContext<PulseDbContext>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IdentityService>();
 builder.Services.AddScoped<CaptureService>();
+builder.Services.AddScoped<QueryService>();
 
 var app = builder.Build();
 
@@ -30,6 +31,7 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapProjectEndpoints();
 app.MapCaptureEndpoints();
 app.MapPersonEndpoints();
+app.MapInsightEndpoints();
 
 app.Run();
 
