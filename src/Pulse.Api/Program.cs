@@ -25,6 +25,10 @@ builder.Services.AddSingleton<IngestionSignal>();
 builder.Services.AddSingleton<IngestionCounters>();
 builder.Services.AddScoped<IngestionProcessor>();
 builder.Services.AddHostedService<Pulse.Api.Ingestion.IngestionWorker>();
+builder.Services.AddScoped<ExportService>();
+builder.Services.AddScoped<ExportJobProcessor>();
+builder.Services.AddSingleton<ExportSignal>();
+builder.Services.AddHostedService<Pulse.Api.Export.ExportWorker>();
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddScoped<JwtTokenIssuer>();
 builder.Services.AddScoped<ProjectAccessService>();
@@ -126,6 +130,7 @@ app.MapFeatureFlagEndpoints();
 app.MapDashboardEndpoints();
 app.MapIngestionEndpoints();
 app.MapDataManagementEndpoints();
+app.MapExportEndpoints();
 
 app.Run();
 

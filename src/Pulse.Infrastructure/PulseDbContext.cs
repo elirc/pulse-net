@@ -43,6 +43,8 @@ public class PulseDbContext : DbContext
 
     public DbSet<DeadLetterEvent> DeadLetterEvents => Set<DeadLetterEvent>();
 
+    public DbSet<ExportJob> ExportJobs => Set<ExportJob>();
+
     public DbSet<DashboardTile> DashboardTiles => Set<DashboardTile>();
 
     public DbSet<CohortPerson> CohortPersons => Set<CohortPerson>();
@@ -109,6 +111,16 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<ExportJob>(b =>
+        {
+            b.Property(j => j.Type).HasMaxLength(20);
+            b.Property(j => j.Format).HasMaxLength(10);
+            b.Property(j => j.Status).HasConversion<string>().HasMaxLength(20);
+            b.Property(j => j.ContentType).HasMaxLength(50);
+            b.Property(j => j.Error).HasMaxLength(2000);
+            b.HasIndex(j => new { j.ProjectId, j.CreatedAt });
         });
 
         modelBuilder.Entity<Annotation>(b =>
