@@ -41,6 +41,18 @@ dotnet run --project src/Pulse.Api            # serves the API (SQLite: pulse.db
 dotnet run --project src/Pulse.Api -- seed    # demo project + 30 days of traffic; prints keys + a demo login
 ```
 
+## Documentation
+
+| Doc | Contents |
+| --- | --- |
+| [docs/getting-started.md](docs/getting-started.md) | Run, seed, capture events with curl, run trend/funnel/retention queries, evaluate a flag via `/decide` |
+| [docs/architecture.md](docs/architecture.md) | Layering, the ingestion pipeline (durable queue + Channels-signalled worker, dead letters), identity model, query engine, the SQLite ticks converter |
+| [docs/api-reference.md](docs/api-reference.md) | Every endpoint: method, route, auth, request/response shapes, error codes |
+| [docs/adr/](docs/adr/README.md) | Architecture decision records — the why behind async ingest, 404-not-403, deterministic rollout, the key-type split, the test harness, UTC ticks, cursor pagination, the SQL/memory query split |
+| [docs/testing.md](docs/testing.md) | Test taxonomy, the drain helper, conventions, flakiness policy |
+
+The API tables below are a summary; the reference doc has the full shapes.
+
 ## Authentication model
 
 | Credential | Prefix | Grants |
@@ -199,8 +211,8 @@ properties and cohorts.
 | `GET /api/ingestion/metrics` | Ingestion throughput and queue depth |
 
 Every request is logged (`method path → status in ms`); `/capture` is rate
-limited per write key (fixed window, `RateLimiting:Capture:PermitLimit`,
-default 300/min).
+limited per write key (fixed window, `RateLimiting:Capture:PermitLimit` /
+`WindowSeconds`, default 300 per 60 s).
 
 ## Development notes
 
