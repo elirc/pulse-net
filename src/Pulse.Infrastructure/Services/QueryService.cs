@@ -5,12 +5,15 @@ namespace Pulse.Infrastructure.Services;
 
 public record TrendBucket(DateTimeOffset Start, int Count, int UniquePersons);
 
+public record TrendAnnotation(Guid Id, DateOnly Date, string Content);
+
 public record TrendResult(
     string Event,
     string Interval,
     DateTimeOffset From,
     DateTimeOffset To,
-    IReadOnlyList<TrendBucket> Buckets);
+    IReadOnlyList<TrendBucket> Buckets,
+    IReadOnlyList<TrendAnnotation> Annotations);
 
 public record TrendSeries(string Value, int Total, IReadOnlyList<TrendBucket> Buckets);
 
@@ -20,7 +23,8 @@ public record TrendBreakdownResult(
     string Breakdown,
     DateTimeOffset From,
     DateTimeOffset To,
-    IReadOnlyList<TrendSeries> Series);
+    IReadOnlyList<TrendSeries> Series,
+    IReadOnlyList<TrendAnnotation> Annotations);
 
 public record FunnelStepResult(
     int Order,
@@ -84,8 +88,10 @@ public class QueryService
             projectId, e => e.Name == eventName, from, to, filters, ct);
 
         var buckets = Bucketize(events, from, to, interval);
+        var annotations = await LoadAnnotationsAsync(projectId, from, to, ct);
 
-        return new TrendResult(eventName, interval.ToString().ToLowerInvariant(), from, to, buckets);
+        return new TrendResult(
+            eventName, interval.ToString().ToLowerInvariant(), from, to, buckets, annotations);
     }
 
     public async Task<TrendBreakdownResult> TrendBreakdownAsync(
@@ -127,7 +133,8 @@ public class QueryService
             breakdownProperty,
             from,
             to,
-            series);
+            series,
+            await LoadAnnotationsAsync(projectId, from, to, ct));
     }
 
     public async Task<FunnelResult> FunnelAsync(
@@ -320,6 +327,23 @@ public class QueryService
 
             return PropertyFilterEvaluator.Matches(props, personFilters);
         }).ToList();
+    }
+
+    /// <summary>Annotations whose date falls inside the queried range, oldest first.</summary>
+    private async Task<List<TrendAnnotation>> LoadAnnotationsAsync(
+        Guid projectId,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken ct)
+    {
+        var first = DateOnly.FromDateTime(from.UtcDateTime);
+        var last = DateOnly.FromDateTime(to.UtcDateTime);
+
+        return await _db.Annotations
+            .Where(a => a.ProjectId == projectId && a.Date >= first && a.Date <= last)
+            .OrderBy(a => a.Date)
+            .Select(a => new TrendAnnotation(a.Id, a.Date, a.Content))
+            .ToListAsync(ct);
     }
 
     private static List<TrendBucket> Bucketize(

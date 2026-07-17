@@ -35,6 +35,12 @@ public class PulseDbContext : DbContext
 
     public DbSet<QueuedEvent> QueuedEvents => Set<QueuedEvent>();
 
+    public DbSet<Annotation> Annotations => Set<Annotation>();
+
+    public DbSet<EventDefinition> EventDefinitions => Set<EventDefinition>();
+
+    public DbSet<PropertyDefinition> PropertyDefinitions => Set<PropertyDefinition>();
+
     public DbSet<DeadLetterEvent> DeadLetterEvents => Set<DeadLetterEvent>();
 
     public DbSet<DashboardTile> DashboardTiles => Set<DashboardTile>();
@@ -103,6 +109,25 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<Annotation>(b =>
+        {
+            b.Property(a => a.Content).HasMaxLength(2000);
+            b.HasIndex(a => new { a.ProjectId, a.Date });
+        });
+
+        modelBuilder.Entity<EventDefinition>(b =>
+        {
+            b.Property(d => d.Name).HasMaxLength(200);
+            b.HasIndex(d => new { d.ProjectId, d.Name }).IsUnique();
+        });
+
+        modelBuilder.Entity<PropertyDefinition>(b =>
+        {
+            b.Property(d => d.Name).HasMaxLength(200);
+            b.Property(d => d.PropertyType).HasMaxLength(20);
+            b.HasIndex(d => new { d.ProjectId, d.Name }).IsUnique();
         });
 
         modelBuilder.Entity<QueuedEvent>(b =>
