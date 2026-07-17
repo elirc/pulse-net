@@ -58,6 +58,21 @@ public static class FilterParsing
 
         foreach (var dto in dtos)
         {
+            // Cohort filters: { "type": "cohort", "value": "<cohort id>" }.
+            if (string.Equals(dto.Type, "cohort", StringComparison.OrdinalIgnoreCase))
+            {
+                var cohortValue = Normalize(dto.Value);
+                if (!Guid.TryParse(cohortValue, out _))
+                {
+                    error = "Cohort filters need a 'value' containing the cohort id (GUID).";
+                    return false;
+                }
+
+                filters.Add(new PropertyFilter(
+                    FilterTarget.Cohort, "id", FilterOperator.Equals, cohortValue));
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(dto.Property))
             {
                 error = "Every filter needs a 'property'.";

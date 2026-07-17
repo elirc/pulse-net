@@ -2,11 +2,18 @@ using System.Text.Json;
 
 namespace Pulse.Domain;
 
-/// <summary>What a filter inspects: the event's own properties, or the properties of the person who performed it.</summary>
+/// <summary>What a filter inspects: the event's own properties, the properties of the person who performed it, or cohort membership.</summary>
 public enum FilterTarget
 {
     Event,
     Person,
+
+    /// <summary>
+    /// Restricts events to persons in a cohort. <see cref="PropertyFilter.Value"/>
+    /// holds the cohort id; membership is resolved by the query engine, not
+    /// the JSON evaluator.
+    /// </summary>
+    Cohort,
 }
 
 public enum FilterOperator

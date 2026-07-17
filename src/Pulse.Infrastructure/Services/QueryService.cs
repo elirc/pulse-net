@@ -57,10 +57,12 @@ public class QueryService
     public const string OtherBreakdownValue = "(other)";
 
     private readonly PulseDbContext _db;
+    private readonly CohortService _cohorts;
 
-    public QueryService(PulseDbContext db)
+    public QueryService(PulseDbContext db, CohortService cohorts)
     {
         _db = db;
+        _cohorts = cohorts;
     }
 
     private sealed record QueryEvent(
@@ -267,6 +269,7 @@ public class QueryService
 
         var eventFilters = filters.Where(f => f.Target == FilterTarget.Event).ToList();
         var personFilters = filters.Where(f => f.Target == FilterTarget.Person).ToList();
+        var cohortFilters = filters.Where(f => f.Target == FilterTarget.Cohort).ToList();
 
         Dictionary<Guid, string> personProps = [];
         if (personFilters.Count > 0)
@@ -276,9 +279,32 @@ public class QueryService
                 .ToDictionaryAsync(p => p.Id, p => p.PropertiesJson, ct);
         }
 
+        // Every cohort filter must match: intersect the member sets.
+        HashSet<Guid>? cohortMembers = null;
+        foreach (var cohortFilter in cohortFilters)
+        {
+            var cohortId = Guid.TryParse(cohortFilter.Value, out var parsed) ? parsed : Guid.Empty;
+            var members = await _cohorts.GetMemberIdsAsync(projectId, cohortId, ct);
+
+            if (cohortMembers is null)
+            {
+                cohortMembers = members;
+            }
+            else
+            {
+                cohortMembers.IntersectWith(members);
+            }
+        }
+
         return events.Where(e =>
         {
             if (!PropertyFilterEvaluator.Matches(e.PropertiesJson, eventFilters))
+            {
+                return false;
+            }
+
+            if (cohortMembers is not null
+                && (e.PersonId is not { } cohortPersonId || !cohortMembers.Contains(cohortPersonId)))
             {
                 return false;
             }

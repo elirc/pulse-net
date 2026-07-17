@@ -27,6 +27,10 @@ public class PulseDbContext : DbContext
 
     public DbSet<PersonalApiKey> PersonalApiKeys => Set<PersonalApiKey>();
 
+    public DbSet<Cohort> Cohorts => Set<Cohort>();
+
+    public DbSet<CohortPerson> CohortPersons => Set<CohortPerson>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // SQLite stores DateTimeOffset as TEXT and cannot order/compare it
@@ -89,6 +93,18 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<Cohort>(b =>
+        {
+            b.Property(c => c.Name).HasMaxLength(200);
+            b.Property(c => c.Type).HasConversion<string>().HasMaxLength(20);
+            b.HasIndex(c => c.ProjectId);
+        });
+
+        modelBuilder.Entity<CohortPerson>(b =>
+        {
+            b.HasIndex(cp => new { cp.CohortId, cp.PersonId }).IsUnique();
         });
 
         modelBuilder.Entity<Insight>(b =>
