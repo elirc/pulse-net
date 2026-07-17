@@ -19,29 +19,8 @@ public record PropertyFilterDto(
 public static class FilterParsing
 {
     /// <summary>Parses the <c>filters</c> query parameter — a JSON array of filter objects.</summary>
-    public static bool TryParseJson(string? json, out List<PropertyFilter> filters, out string error)
-    {
-        filters = [];
-        error = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return true;
-        }
-
-        List<PropertyFilterDto>? dtos;
-        try
-        {
-            dtos = JsonSerializer.Deserialize<List<PropertyFilterDto>>(json, JsonSerializerOptions.Web);
-        }
-        catch (JsonException)
-        {
-            error = "filters must be a JSON array of filter objects.";
-            return false;
-        }
-
-        return TryConvert(dtos, out filters, out error);
-    }
+    public static bool TryParseJson(string? json, out List<PropertyFilter> filters, out string error) =>
+        PropertyFilterParser.TryParse(json, out filters, out error);
 
     public static bool TryConvert(
         IReadOnlyList<PropertyFilterDto>? dtos,

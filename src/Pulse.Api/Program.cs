@@ -19,6 +19,7 @@ builder.Services.AddScoped<IdentityService>();
 builder.Services.AddScoped<CaptureService>();
 builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<CohortService>();
+builder.Services.AddScoped<FeatureFlagService>();
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddScoped<JwtTokenIssuer>();
 builder.Services.AddScoped<ProjectAccessService>();
@@ -116,6 +117,7 @@ app.MapCaptureEndpoints();
 app.MapPersonEndpoints();
 app.MapInsightEndpoints();
 app.MapCohortEndpoints();
+app.MapFeatureFlagEndpoints();
 
 app.Run();
 
