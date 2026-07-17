@@ -59,6 +59,7 @@ public class CaptureService
 
             var person = await ResolvePersonAsync(project.Id, incoming, root, ct);
             ApplyPersonProperties(person, root);
+            await UpsertDefinitionsAsync(project.Id, incoming.Name, root, now, ct);
 
             _db.Events.Add(new AnalyticsEvent
             {
@@ -94,6 +95,82 @@ public class CaptureService
 
         return await _identity.ResolveAsync(projectId, incoming.DistinctId, ct);
     }
+
+    /// <summary>
+    /// Keeps the event/property registries current: every ingested event
+    /// upserts its name and its non-system property keys (with the JSON kind
+    /// first observed for each key).
+    /// </summary>
+    private async Task UpsertDefinitionsAsync(
+        Guid projectId,
+        string eventName,
+        JsonElement properties,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        var eventDef =
+            _db.EventDefinitions.Local.FirstOrDefault(d => d.ProjectId == projectId && d.Name == eventName)
+            ?? await _db.EventDefinitions
+                .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Name == eventName, ct);
+
+        if (eventDef is null)
+        {
+            _db.EventDefinitions.Add(new EventDefinition
+            {
+                ProjectId = projectId,
+                Name = eventName,
+                FirstSeenAt = now,
+                LastSeenAt = now,
+            });
+        }
+        else
+        {
+            eventDef.LastSeenAt = now;
+        }
+
+        if (properties.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        foreach (var property in properties.EnumerateObject())
+        {
+            if (property.Name.StartsWith('$') || property.Value.ValueKind is JsonValueKind.Null)
+            {
+                continue; // System keys ($set, $anon_distinct_id, ...) aren't user properties.
+            }
+
+            var propertyDef =
+                _db.PropertyDefinitions.Local.FirstOrDefault(d => d.ProjectId == projectId && d.Name == property.Name)
+                ?? await _db.PropertyDefinitions
+                    .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Name == property.Name, ct);
+
+            if (propertyDef is null)
+            {
+                _db.PropertyDefinitions.Add(new PropertyDefinition
+                {
+                    ProjectId = projectId,
+                    Name = property.Name,
+                    PropertyType = KindName(property.Value.ValueKind),
+                    FirstSeenAt = now,
+                    LastSeenAt = now,
+                });
+            }
+            else
+            {
+                propertyDef.LastSeenAt = now;
+            }
+        }
+    }
+
+    private static string KindName(JsonValueKind kind) => kind switch
+    {
+        JsonValueKind.String => "string",
+        JsonValueKind.Number => "number",
+        JsonValueKind.True or JsonValueKind.False => "boolean",
+        JsonValueKind.Array => "array",
+        _ => "object",
+    };
 
     private static void ApplyPersonProperties(Person person, JsonElement properties)
     {

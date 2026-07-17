@@ -125,6 +125,7 @@ app.MapCohortEndpoints();
 app.MapFeatureFlagEndpoints();
 app.MapDashboardEndpoints();
 app.MapIngestionEndpoints();
+app.MapDataManagementEndpoints();
 
 app.Run();
 
