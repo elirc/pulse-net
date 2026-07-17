@@ -29,6 +29,8 @@ public class PulseDbContext : DbContext
 
     public DbSet<Cohort> Cohorts => Set<Cohort>();
 
+    public DbSet<FeatureFlag> FeatureFlags => Set<FeatureFlag>();
+
     public DbSet<CohortPerson> CohortPersons => Set<CohortPerson>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -93,6 +95,14 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<FeatureFlag>(b =>
+        {
+            b.Property(f => f.Key).HasMaxLength(200);
+            b.Property(f => f.Name).HasMaxLength(200);
+            b.Property(f => f.Type).HasConversion<string>().HasMaxLength(20);
+            b.HasIndex(f => new { f.ProjectId, f.Key }).IsUnique();
         });
 
         modelBuilder.Entity<Cohort>(b =>
