@@ -67,6 +67,8 @@ public static class DataManagementEndpoints
             Guid projectId,
             DateOnly? from,
             DateOnly? to,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -76,6 +78,8 @@ public static class DataManagementEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var query = db.Annotations.Where(a => a.ProjectId == projectId);
             if (from is { } first)
@@ -91,6 +95,8 @@ public static class DataManagementEndpoints
             var annotations = await query
                 .OrderBy(a => a.Date)
                 .ThenBy(a => a.CreatedAt)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(ct);
 
             return Results.Ok(annotations.Select(ToResponse));
@@ -165,6 +171,8 @@ public static class DataManagementEndpoints
     {
         app.MapGet("/api/projects/{projectId:guid}/event-definitions", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -174,10 +182,14 @@ public static class DataManagementEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var definitions = await db.EventDefinitions
                 .Where(d => d.ProjectId == projectId)
                 .OrderBy(d => d.Name)
+                .Skip(skip)
+                .Take(take)
                 .Select(d => new EventDefinitionResponse(d.Name, d.FirstSeenAt, d.LastSeenAt))
                 .ToListAsync(ct);
 
@@ -186,6 +198,8 @@ public static class DataManagementEndpoints
 
         app.MapGet("/api/projects/{projectId:guid}/property-definitions", async (
             Guid projectId,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -195,10 +209,14 @@ public static class DataManagementEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var definitions = await db.PropertyDefinitions
                 .Where(d => d.ProjectId == projectId)
                 .OrderBy(d => d.Name)
+                .Skip(skip)
+                .Take(take)
                 .Select(d => new PropertyDefinitionResponse(
                     d.Name, d.PropertyType, d.FirstSeenAt, d.LastSeenAt))
                 .ToListAsync(ct);

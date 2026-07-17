@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -69,6 +70,27 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Rate limit /capture per write key (falling back to client IP): fixed
+// one-minute windows, no queueing — SDKs should back off and retry.
+var capturePermitLimit = builder.Configuration.GetValue("RateLimiting:Capture:PermitLimit", 300);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("capture", context =>
+    {
+        var key = context.Request.Headers["X-Api-Key"].FirstOrDefault()
+                  ?? context.Connection.RemoteIpAddress?.ToString()
+                  ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = capturePermitLimit,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+        });
+    });
+});
+
 // RFC 7807 responses for every error path, including unhandled exceptions
 // and malformed request bodies.
 builder.Services.AddProblemDetails();
@@ -110,15 +132,50 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
 });
 app.UseStatusCodePages();
 
+app.UseMiddleware<Pulse.Api.RequestLoggingMiddleware>();
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new
+// Health: liveness plus database and ingestion-queue probes. Database
+// failure reports 503; a heavily backed-up queue degrades but stays 200.
+app.MapGet("/health", async (PulseDbContext db, CancellationToken ct) =>
 {
-    status = "healthy",
-    service = "pulse-net",
-    timestamp = DateTime.UtcNow,
-}));
+    const int queueDepthWarningThreshold = 10_000;
+
+    int pending;
+    int deadLetters;
+    try
+    {
+        pending = await db.QueuedEvents.CountAsync(ct);
+        deadLetters = await db.DeadLetterEvents.CountAsync(ct);
+    }
+    catch (Exception)
+    {
+        return Results.Json(new
+        {
+            status = "unhealthy",
+            service = "pulse-net",
+            timestamp = DateTime.UtcNow,
+            checks = new { database = "failing", queue = (object?)null },
+        }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    var status = pending > queueDepthWarningThreshold ? "degraded" : "healthy";
+
+    return Results.Ok(new
+    {
+        status,
+        service = "pulse-net",
+        timestamp = DateTime.UtcNow,
+        checks = new
+        {
+            database = "ok",
+            queue = new { pending, deadLetters },
+        },
+    });
+});
 
 app.MapAuthEndpoints();
 app.MapProjectEndpoints();

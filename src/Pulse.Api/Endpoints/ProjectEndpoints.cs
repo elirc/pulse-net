@@ -43,16 +43,18 @@ public static class ProjectEndpoints
             return Results.Created($"/api/projects/{project.Id}", ToResponse(project));
         });
 
-        group.MapGet("/", async (HttpContext http, PulseDbContext db) =>
+        group.MapGet("/", async (int? limit, int? offset, HttpContext http, PulseDbContext db) =>
         {
             var userId = ProjectAccessService.GetUserId(http.User)!.Value;
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var projects = await (
                 from p in db.Projects
                 join m in db.ProjectMemberships on p.Id equals m.ProjectId
                 where m.UserId == userId
                 orderby p.CreatedAt
-                select p).ToListAsync();
+                select p).Skip(skip).Take(take).ToListAsync();
 
             return Results.Ok(projects.Select(ToResponse));
         });
@@ -124,6 +126,8 @@ public static class ProjectEndpoints
 
         group.MapGet("/{id:guid}/members", async (
             Guid id,
+            int? limit,
+            int? offset,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -133,13 +137,16 @@ public static class ProjectEndpoints
             {
                 return denied;
             }
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var members = await (
                 from m in db.ProjectMemberships
                 join u in db.Users on m.UserId equals u.Id
                 where m.ProjectId == id
                 orderby m.CreatedAt
-                select new MemberResponse(u.Id, u.Email, u.Name, m.CreatedAt)).ToListAsync(ct);
+                select new MemberResponse(u.Id, u.Email, u.Name, m.CreatedAt))
+                .Skip(skip).Take(take).ToListAsync(ct);
 
             return Results.Ok(members);
         });

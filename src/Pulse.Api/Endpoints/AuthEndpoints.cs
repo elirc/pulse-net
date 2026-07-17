@@ -130,13 +130,17 @@ public static class AuthEndpoints
                 new PersonalApiKeyCreatedResponse(key.Id, key.Name, plaintext, key.CreatedAt));
         });
 
-        keys.MapGet("/", async (HttpContext http, PulseDbContext db, CancellationToken ct) =>
+        keys.MapGet("/", async (int? limit, int? offset, HttpContext http, PulseDbContext db, CancellationToken ct) =>
         {
             var userId = ProjectAccessService.GetUserId(http.User)!.Value;
+            var take = Math.Clamp(limit ?? 100, 1, 500);
+            var skip = Math.Max(offset ?? 0, 0);
 
             var list = await db.PersonalApiKeys
                 .Where(k => k.UserId == userId)
                 .OrderBy(k => k.CreatedAt)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(ct);
 
             return Results.Ok(list.Select(k =>
