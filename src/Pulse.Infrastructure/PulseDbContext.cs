@@ -33,6 +33,10 @@ public class PulseDbContext : DbContext
 
     public DbSet<Dashboard> Dashboards => Set<Dashboard>();
 
+    public DbSet<QueuedEvent> QueuedEvents => Set<QueuedEvent>();
+
+    public DbSet<DeadLetterEvent> DeadLetterEvents => Set<DeadLetterEvent>();
+
     public DbSet<DashboardTile> DashboardTiles => Set<DashboardTile>();
 
     public DbSet<CohortPerson> CohortPersons => Set<CohortPerson>();
@@ -99,6 +103,20 @@ public class PulseDbContext : DbContext
             b.Property(d => d.DistinctId).HasMaxLength(400);
             b.HasIndex(d => new { d.ProjectId, d.DistinctId }).IsUnique();
             b.HasIndex(d => d.PersonId);
+        });
+
+        modelBuilder.Entity<QueuedEvent>(b =>
+        {
+            // Auto-increment rowid: cheap appends, stable processing order.
+            b.HasKey(q => q.Seq);
+            b.Property(q => q.Seq).ValueGeneratedOnAdd();
+            b.HasIndex(q => q.ProjectId);
+        });
+
+        modelBuilder.Entity<DeadLetterEvent>(b =>
+        {
+            b.Property(d => d.Error).HasMaxLength(2000);
+            b.HasIndex(d => d.ProjectId);
         });
 
         modelBuilder.Entity<Dashboard>(b =>

@@ -45,4 +45,17 @@ public record CaptureEventItem
     public JsonElement? Properties { get; init; }
 }
 
-public record CaptureResponse(string Status, int Ingested);
+public record CaptureResponse(string Status, int Queued);
+
+public record IngestionMetricsResponse(
+    int Pending,
+    int DeadLetters,
+    long ProcessedTotal,
+    long DeadLetteredTotal);
+
+public record DeadLetterResponse(
+    Guid Id,
+    string PayloadJson,
+    string Error,
+    int Attempts,
+    DateTimeOffset FailedAt);

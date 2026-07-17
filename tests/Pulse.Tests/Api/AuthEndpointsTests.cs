@@ -302,5 +302,6 @@ public class AuthEndpointsTests : IClassFixture<PulseApiFactory>
             distinct_id = distinctId,
         });
         response.EnsureSuccessStatusCode();
+        await TestIngestion.WaitForDrainAsync(_client);
     }
 }

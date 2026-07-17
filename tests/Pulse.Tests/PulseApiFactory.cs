@@ -8,18 +8,23 @@ using Pulse.Infrastructure;
 namespace Pulse.Tests;
 
 /// <summary>
-/// Boots the API against a private in-memory SQLite database. The connection
-/// is held open for the factory's lifetime so the schema survives between
-/// requests; each factory instance gets a fresh database.
+/// Boots the API against a private shared-cache in-memory SQLite database.
+/// Every DbContext opens its own connection to the same named database, so
+/// the background ingestion worker and request handlers can operate
+/// concurrently (a single SqliteConnection is not thread-safe). The
+/// keep-alive connection pins the database for the factory's lifetime;
+/// each factory instance gets a fresh database.
 /// </summary>
 public class PulseApiFactory : WebApplicationFactory<Program>
 {
-    private readonly SqliteConnection _connection;
+    private readonly string _connectionString;
+    private readonly SqliteConnection _keepAlive;
 
     public PulseApiFactory()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        _connectionString = $"Data Source=pulse-tests-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+        _keepAlive = new SqliteConnection(_connectionString);
+        _keepAlive.Open();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -31,7 +36,7 @@ public class PulseApiFactory : WebApplicationFactory<Program>
             services.Remove(descriptor);
 
             services.AddDbContext<PulseDbContext>(options =>
-                options.UseSqlite(_connection));
+                options.UseSqlite(_connectionString));
         });
     }
 
@@ -40,7 +45,7 @@ public class PulseApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing)
         {
-            _connection.Dispose();
+            _keepAlive.Dispose();
         }
     }
 }

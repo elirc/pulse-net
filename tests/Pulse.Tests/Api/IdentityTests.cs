@@ -238,6 +238,7 @@ public class IdentityTests : IClassFixture<PulseApiFactory>
         withKey["api_key"] = apiKey;
         var response = await _client.PostAsJsonAsync("/capture", withKey);
         response.EnsureSuccessStatusCode();
+        await TestIngestion.WaitForDrainAsync(_client);
     }
 
     private async Task<PersonResponse?> GetPersonByDistinctIdAsync(Guid projectId, string distinctId)

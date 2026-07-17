@@ -318,6 +318,7 @@ public class CohortTests : IClassFixture<PulseApiFactory>
         var response = await _client.PostAsJsonAsync(
             "/capture", new { api_key = apiKey, batch = events });
         response.EnsureSuccessStatusCode();
+        await TestIngestion.WaitForDrainAsync(_client);
     }
 
     private async Task<T> GetAsync<T>(string url)

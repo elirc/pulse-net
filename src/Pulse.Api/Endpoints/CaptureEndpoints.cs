@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Pulse.Api.Contracts;
+using Pulse.Domain.Entities;
+using Pulse.Infrastructure;
 using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api.Endpoints;
@@ -14,6 +16,8 @@ public static class CaptureEndpoints
             CaptureRequest request,
             HttpContext http,
             CaptureService capture,
+            PulseDbContext db,
+            IngestionSignal signal,
             CancellationToken ct) =>
         {
             var apiKey = request.ApiKey
@@ -41,8 +45,21 @@ public static class CaptureEndpoints
                 return Results.ValidationProblem(errors);
             }
 
-            var result = await capture.IngestAsync(project, events, ct);
-            return Results.Ok(new CaptureResponse("ok", result.Ingested));
+            // v2 ingestion: append to the durable queue and return 202; the
+            // background worker validates and persists asynchronously.
+            foreach (var incoming in events)
+            {
+                db.QueuedEvents.Add(new QueuedEvent
+                {
+                    ProjectId = project.Id,
+                    PayloadJson = JsonSerializer.Serialize(incoming),
+                });
+            }
+
+            await db.SaveChangesAsync(ct);
+            signal.Ring();
+
+            return Results.Accepted(value: new CaptureResponse("queued", events.Count));
         });
 
         return app;

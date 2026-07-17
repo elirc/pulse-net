@@ -21,6 +21,10 @@ builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<CohortService>();
 builder.Services.AddScoped<FeatureFlagService>();
 builder.Services.AddScoped<InsightRunnerService>();
+builder.Services.AddSingleton<IngestionSignal>();
+builder.Services.AddSingleton<IngestionCounters>();
+builder.Services.AddScoped<IngestionProcessor>();
+builder.Services.AddHostedService<Pulse.Api.Ingestion.IngestionWorker>();
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddScoped<JwtTokenIssuer>();
 builder.Services.AddScoped<ProjectAccessService>();
@@ -120,6 +124,7 @@ app.MapInsightEndpoints();
 app.MapCohortEndpoints();
 app.MapFeatureFlagEndpoints();
 app.MapDashboardEndpoints();
+app.MapIngestionEndpoints();
 
 app.Run();
 
