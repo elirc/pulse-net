@@ -13,7 +13,8 @@ public record CreateExportJobRequest(
     DateTimeOffset? From,
     DateTimeOffset? To,
     JsonElement? Filters,
-    Guid? InsightId);
+    Guid? InsightId,
+    string? Consistency = null);
 
 public record ExportJobResponse(
     Guid Id,
@@ -24,4 +25,8 @@ public record ExportJobResponse(
     int RowCount,
     string? Error,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? CompletedAt);
+    DateTimeOffset? CompletedAt,
+    string Consistency = "live",
+    DateTimeOffset? SnapshotCapturedAt = null,
+    long AttemptGeneration = 0,
+    DateTimeOffset? LastHeartbeatAt = null);

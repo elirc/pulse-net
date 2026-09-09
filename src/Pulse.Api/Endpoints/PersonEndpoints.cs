@@ -7,16 +7,20 @@ using Pulse.Infrastructure;
 
 namespace Pulse.Api.Endpoints;
 
-public static class PersonEndpoints
+public static partial class PersonEndpoints
 {
     public static IEndpointRouteBuilder MapPersonEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}/persons");
+        MapPersonActivityFeatures(group);
 
         group.MapGet("/", async (
             Guid projectId,
             int? limit,
             int? offset,
+            string? distinctId,
+            DateTimeOffset? createdFrom,
+            DateTimeOffset? createdBefore,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -30,9 +34,17 @@ public static class PersonEndpoints
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
+            if (InputRules.Text(distinctId, 400, "distinctId", out var identity) is { } invalid) return invalid;
+            if (createdFrom is { } from && createdBefore is { } before && from >= before)
+                return InputRules.Problem("createdFrom", "createdFrom must be before createdBefore.");
+
             var persons = await db.Persons
                 .Where(p => p.ProjectId == projectId)
+                .Where(p => identity == null || db.PersonDistinctIds.Any(m => m.ProjectId == projectId && m.PersonId == p.Id && m.DistinctId == identity))
+                .Where(p => createdFrom == null || p.CreatedAt >= createdFrom)
+                .Where(p => createdBefore == null || p.CreatedAt < createdBefore)
                 .OrderBy(p => p.CreatedAt)
+                .ThenBy(p => p.Id)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync(ct);
@@ -44,6 +56,13 @@ public static class PersonEndpoints
             }
 
             return Results.Ok(responses);
+        });
+
+        group.MapGet("/count", async (Guid projectId, HttpContext http, PulseDbContext db,
+            ProjectAccessService access, CancellationToken ct) =>
+        {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied) return denied;
+            return Results.Ok(new PersonCountResponse(await db.Persons.CountAsync(p => p.ProjectId == projectId, ct)));
         });
 
         group.MapGet("/{personId:guid}", async (

@@ -10,6 +10,9 @@ public class DeadLetterEvent
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public Guid ProjectId { get; set; }
+    public Guid? AdmissionId { get; set; }
+    public string? TraceParent { get; set; }
+    public string? OriginalTraceParent { get; set; }
 
     public required string PayloadJson { get; set; }
 

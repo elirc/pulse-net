@@ -5,10 +5,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pulse.Api.Auth;
+using Pulse.Api.Database;
 using Pulse.Api.Endpoints;
 using Pulse.Domain;
 using Pulse.Infrastructure;
 using Pulse.Infrastructure.Services;
+using Pulse.Infrastructure.Schema;
+
+if (await DatabaseCommands.TryRunAsync(args)) return;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,23 +20,59 @@ builder.Services.AddDbContext<PulseDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Pulse")
                       ?? "Data Source=pulse.db"));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IDatabaseInitializer, VerifyDatabaseInitializer>();
 builder.Services.AddScoped<IdentityService>();
 builder.Services.AddScoped<CaptureService>();
 builder.Services.AddScoped<QueryService>();
+builder.Services.AddScoped<BoundedQueryService>();
+builder.Services.AddScoped<PersonSessionService>();
+builder.Services.AddScoped<HourlyAlertService>();
+builder.Services.AddHostedService<Pulse.Api.Scheduling.HourlyAlertWorker>();
 builder.Services.AddScoped<CohortService>();
+builder.Services.AddScoped<CohortEditingService>();
 builder.Services.AddScoped<FeatureFlagService>();
+builder.Services.AddScoped<FlagDraftService>();
+builder.Services.AddScoped<FlagMutationService>();
+builder.Services.AddScoped<FlagScheduleService>();
+builder.Services.AddSingleton<FlagScheduleSignal>();
+builder.Services.AddHostedService<Pulse.Api.Scheduling.FlagScheduleWorker>();
 builder.Services.AddScoped<InsightRunnerService>();
+builder.Services.AddScoped<IInsightRunner>(services => services.GetRequiredService<InsightRunnerService>());
+builder.Services.AddScoped<DashboardCopyService>();
+builder.Services.AddScoped<DashboardTemplateService>();
+builder.Services.AddScoped<AnalyticsCompositionService>();
 builder.Services.AddSingleton<IngestionSignal>();
 builder.Services.AddSingleton<IngestionCounters>();
 builder.Services.AddScoped<IngestionProcessor>();
+builder.Services.AddSingleton<IngestionWorkerIdentity>();
+builder.Services.AddScoped<QueueAdmissionService>();
+builder.Services.AddScoped<CaptureReceiptService>();
+builder.Services.AddScoped<IngestionOperationsService>();
 builder.Services.AddHostedService<Pulse.Api.Ingestion.IngestionWorker>();
+builder.Services.AddHostedService<Pulse.Api.Ingestion.CaptureMetadataCleanupWorker>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<ExportJobProcessor>();
+builder.Services.AddSingleton<ExportWorkerIdentity>();
+builder.Services.AddScoped<ExportOwnershipService>();
+builder.Services.AddScoped<ExportSnapshotService>();
+builder.Services.AddScoped<EventRetentionService>();
+var suppressionVersion = builder.Configuration.GetValue("Erasure:CurrentKeyVersion", 1);
+var suppressionKeys = builder.Configuration.GetSection("Erasure:Keys").GetChildren().ToDictionary(
+    item => int.Parse(item.Key, System.Globalization.CultureInfo.InvariantCulture), item => Convert.FromBase64String(item.Value ?? ""));
+builder.Services.AddSingleton(new SuppressionKeyRing(suppressionVersion, suppressionKeys));
+builder.Services.AddScoped<IdentitySuppressionService>();
+builder.Services.AddScoped<PersonErasureService>();
+builder.Services.AddHostedService<Pulse.Api.Lifecycle.ErasureWorker>();
+builder.Services.AddHostedService<Pulse.Api.Lifecycle.RetentionWorker>();
+builder.Services.AddScoped<ExportJobOperationsService>();
 builder.Services.AddSingleton<ExportSignal>();
 builder.Services.AddHostedService<Pulse.Api.Export.ExportWorker>();
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddScoped<JwtTokenIssuer>();
 builder.Services.AddScoped<ProjectAccessService>();
+builder.Services.AddScoped<ProjectMembershipService>();
+builder.Services.AddScoped<PersonActivityService>();
+builder.Services.AddScoped<ProjectDiscoveryService>();
 
 // Management-API auth: JWT sessions and pk_user_ personal keys share the
 // Authorization header; a policy scheme dispatches on the token's prefix.
@@ -101,7 +141,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PulseDbContext>();
-    db.Database.EnsureCreated();
+    await scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>().InitializeAsync(db);
+    await scope.ServiceProvider.GetRequiredService<SuppressionKeyRing>().VerifyRequiredVersionsAsync(db, default);
 }
 
 // `dotnet run --project src/Pulse.Api -- seed` generates demo data and exits.
@@ -129,6 +170,8 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
     // BadHttpRequestException — report them as 400s, not 500s.
     StatusCodeSelector = ex => ex is BadHttpRequestException bad
         ? bad.StatusCode
+        : ex is ProjectMaintenanceException or MissingSuppressionKeyException ? StatusCodes.Status503ServiceUnavailable
+        : ex is SuppressedIdentityException ? StatusCodes.Status422UnprocessableEntity
         : StatusCodes.Status500InternalServerError,
 });
 app.UseStatusCodePages();
@@ -138,6 +181,7 @@ app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<RestrictedTokenMiddleware>();
 
 // Health: liveness plus database and ingestion-queue probes. Database
 // failure reports 503; a heavily backed-up queue degrades but stays 200.
@@ -179,16 +223,23 @@ app.MapGet("/health", async (PulseDbContext db, CancellationToken ct) =>
 });
 
 app.MapAuthEndpoints();
-app.MapProjectEndpoints();
-app.MapCaptureEndpoints();
-app.MapPersonEndpoints();
-app.MapInsightEndpoints();
-app.MapCohortEndpoints();
-app.MapFeatureFlagEndpoints();
-app.MapDashboardEndpoints();
-app.MapIngestionEndpoints();
-app.MapDataManagementEndpoints();
-app.MapExportEndpoints();
+var projectRoutes = app.MapGroup("").AddEndpointFilter<ProjectReadSnapshotFilter>();
+projectRoutes.MapProjectEndpoints();
+projectRoutes.MapManagementAuditEndpoints();
+projectRoutes.MapProjectDiscoveryEndpoints();
+projectRoutes.MapCaptureEndpoints();
+projectRoutes.MapPersonEndpoints();
+projectRoutes.MapInsightEndpoints();
+projectRoutes.MapBoundedAnalyticsEndpoints();
+projectRoutes.MapHourlyAlertEndpoints();
+projectRoutes.MapCohortEndpoints();
+projectRoutes.MapFeatureFlagEndpoints();
+projectRoutes.MapDashboardEndpoints();
+projectRoutes.MapIngestionEndpoints();
+projectRoutes.MapDataManagementEndpoints();
+projectRoutes.MapExportEndpoints();
+projectRoutes.MapRetentionEndpoints();
+projectRoutes.MapErasureEndpoints();
 
 app.Run();
 

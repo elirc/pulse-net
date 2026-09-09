@@ -9,13 +9,14 @@ using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api.Endpoints;
 
-public static class ExportEndpoints
+public static partial class ExportEndpoints
 {
     private const string NextCursorHeader = "X-Next-Cursor";
 
     public static IEndpointRouteBuilder MapExportEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}");
+        MapExportHistoryFeatures(group);
 
         // --- Synchronous, cursor-paginated exports ---------------------------
 
@@ -37,6 +38,9 @@ public static class ExportEndpoints
             {
                 return denied;
             }
+
+            if (from is { } rangeStart && to is { } rangeEnd && rangeStart > rangeEnd)
+                return InputRules.Problem("from", "from must not be after to.");
 
             if (!TryParseFormat(format, out var parsedFormat))
             {
@@ -165,7 +169,8 @@ public static class ExportEndpoints
             CreateExportJobRequest request,
             HttpContext http,
             PulseDbContext db,
-            ExportSignal signal,
+            ExportJobOperationsService jobs,
+            IConfiguration configuration,
             ProjectAccessService access,
             CancellationToken ct) =>
         {
@@ -175,6 +180,17 @@ public static class ExportEndpoints
             }
 
             var errors = new Dictionary<string, string[]>();
+            var consistency = request.Consistency?.Trim().ToLowerInvariant() ?? "live";
+            if (consistency is not ("live" or "snapshot")) errors["consistency"] = ["Use live or snapshot."];
+            if (consistency == "snapshot")
+            {
+                if (!configuration.GetValue("Exports:AcceptSnapshots", true)) return Results.Problem("Snapshot admission is paused.", statusCode: 503);
+                if (request.Type?.Trim().ToLowerInvariant() != "events") errors["type"] = ["Snapshot mode supports events only."];
+                if (request.From is not { } start || request.To is not { } end || start > end || end - start > TimeSpan.FromDays(90))
+                    errors["from"] = ["Snapshot mode requires an explicit ordered range of at most 90 days."];
+                if (request.Filters is { } snapshotFilters && (snapshotFilters.ValueKind != JsonValueKind.Array || snapshotFilters.GetArrayLength() != 0))
+                    errors["filters"] = ["Snapshot mode does not support property filters."];
+            }
             var type = request.Type?.Trim().ToLowerInvariant();
             if (type is not ("events" or "persons" or "insight"))
             {
@@ -234,12 +250,11 @@ public static class ExportEndpoints
                 ProjectId = projectId,
                 Type = type!,
                 Format = format,
+                Consistency = consistency,
                 ParamsJson = JsonSerializer.Serialize(parameters),
             };
 
-            db.ExportJobs.Add(job);
-            await db.SaveChangesAsync(ct);
-            signal.Ring();
+            await jobs.EnqueueAsync(job, ct);
 
             return Results.Accepted(
                 $"/api/projects/{projectId}/exports/{job.Id}", ToResponse(job));
@@ -293,7 +308,8 @@ public static class ExportEndpoints
                     statusCode: StatusCodes.Status409Conflict);
             }
 
-            return Results.Text(job.ResultContent!, job.ContentType ?? "application/json");
+            if (job.ResultContent is null) return Results.Problem("The completed export has no stored document.", statusCode: 409);
+            return Results.Bytes(ExportDocument.Bytes(job.ResultContent), ExportDocument.ContentType(job.ContentType));
         });
 
         return app;
@@ -323,9 +339,9 @@ public static class ExportEndpoints
             job.ProjectId,
             job.Type,
             job.Format,
-            job.Status.ToString().ToLowerInvariant(),
+            ExportDocument.StateName(job.Status),
             job.RowCount,
             job.Error,
             job.CreatedAt,
-            job.CompletedAt);
+            job.CompletedAt, job.Consistency, job.SnapshotCapturedAt, job.AttemptGeneration, job.LastHeartbeatAt);
 }

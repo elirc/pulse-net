@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pulse.Api.Contracts;
 using Pulse.Domain.Entities;
@@ -111,7 +112,13 @@ public class IngestionPipelineTests : IClassFixture<PulseApiFactory>
 
         var letters = await _client.GetFromJsonAsync<List<DeadLetterResponse>>(
             $"/api/projects/{projectId}/ingestion/dead-letters");
-        Assert.Contains(letters!, l => l.Error.Contains("distinct_id"));
+        var letter = Assert.Single(letters!);
+        Assert.StartsWith("invalid_envelope:", letter.Error);
+        Assert.Equal(1, letter.Attempts);
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDb = verificationScope.ServiceProvider.GetRequiredService<PulseDbContext>();
+        Assert.False(await verificationDb.QueuedEvents.AnyAsync(e => e.ProjectId == projectId));
+        Assert.False(await verificationDb.Events.AnyAsync(e => e.ProjectId == projectId));
     }
 
     [Fact]

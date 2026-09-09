@@ -13,15 +13,18 @@ public class ExportWorker : BackgroundService
     private readonly IServiceScopeFactory _scopes;
     private readonly ExportSignal _signal;
     private readonly ILogger<ExportWorker> _logger;
+    private readonly IConfiguration _configuration;
 
     public ExportWorker(
         IServiceScopeFactory scopes,
         ExportSignal signal,
-        ILogger<ExportWorker> logger)
+        ILogger<ExportWorker> logger,
+        IConfiguration configuration)
     {
         _scopes = scopes;
         _signal = signal;
         _logger = logger;
+        _configuration = configuration;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -31,6 +34,7 @@ public class ExportWorker : BackgroundService
             try
             {
                 await _signal.WaitAsync(SweepInterval, stoppingToken);
+                if (!_configuration.GetValue("Exports:ClaimsEnabled", true)) continue;
 
                 using var scope = _scopes.CreateScope();
                 var processor = scope.ServiceProvider.GetRequiredService<ExportJobProcessor>();

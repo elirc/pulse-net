@@ -11,6 +11,8 @@ namespace Pulse.Api.Contracts;
 /// </summary>
 public record CaptureRequest
 {
+    [JsonPropertyName("event_id")]
+    public Guid? EventId { get; init; }
     [JsonPropertyName("api_key")]
     public string? ApiKey { get; init; }
 
@@ -32,6 +34,8 @@ public record CaptureRequest
 
 public record CaptureEventItem
 {
+    [JsonPropertyName("event_id")]
+    public Guid? EventId { get; init; }
     [JsonPropertyName("event")]
     public string? Event { get; init; }
 
@@ -46,6 +50,8 @@ public record CaptureEventItem
 }
 
 public record CaptureResponse(string Status, int Queued);
+public record ReplayDeadLettersRequest(List<Guid>? LetterIds);
+public record UpdateIngestionLimitsRequest(int? MaxPending);
 
 public record IngestionMetricsResponse(
     int Pending,

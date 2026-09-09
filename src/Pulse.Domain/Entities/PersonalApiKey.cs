@@ -1,5 +1,7 @@
 namespace Pulse.Domain.Entities;
 
+public enum PersonalKeyMode { LegacyUnrestricted, Restricted }
+
 /// <summary>
 /// A long-lived credential for scripting the management API as a user
 /// (<c>Authorization: Bearer pk_user_…</c>). Only the SHA-256 hash is stored;
@@ -21,4 +23,18 @@ public class PersonalApiKey
     public required string KeySuffix { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public PersonalKeyMode Mode { get; set; } = PersonalKeyMode.LegacyUnrestricted;
+    public DateTimeOffset? ExpiresAt { get; set; }
+}
+
+public class PersonalKeyProject
+{
+    public Guid KeyId { get; set; }
+    public Guid ProjectId { get; set; }
+}
+
+public class PersonalKeyScope
+{
+    public Guid KeyId { get; set; }
+    public required string Scope { get; set; }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Pulse.Domain;
+using Pulse.Domain.Entities;
 using Pulse.Infrastructure;
 
 namespace Pulse.Api.Auth;
@@ -41,24 +42,39 @@ public class PersonalApiKeyAuthenticationHandler : AuthenticationHandler<Authent
 
         var db = Context.RequestServices.GetRequiredService<PulseDbContext>();
         var hash = ApiKeyGenerator.Sha256(key);
+        var now = Context.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
 
-        var user = await (
+        var account = await (
             from k in db.PersonalApiKeys
             join u in db.Users on k.UserId equals u.Id
-            where k.KeyHash == hash
-            select u).SingleOrDefaultAsync(Context.RequestAborted);
+            where k.KeyHash == hash && (k.ExpiresAt == null || k.ExpiresAt > now)
+            select new { User = u, KeyId = k.Id, k.Mode, k.ExpiresAt }).SingleOrDefaultAsync(Context.RequestAborted);
 
-        if (user is null)
+        if (account is null)
         {
             return AuthenticateResult.Fail("Unknown personal API key.");
         }
 
+        var user = account.User;
         var identity = new ClaimsIdentity(
         [
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.Name),
+            new Claim(AuthenticatedActor.PersonalKeyIdClaim, account.KeyId.ToString()),
         ], SchemeName);
+        if (account.Mode == PersonalKeyMode.Restricted)
+        {
+            if (account.ExpiresAt is null) return AuthenticateResult.Fail("Restricted tokens require an expiry.");
+            identity.AddClaim(new(RestrictedToken.ModeClaim, "restricted"));
+            var projects = await db.PersonalKeyProjects.Where(p => p.KeyId == account.KeyId).Select(p => p.ProjectId).Take(21).ToListAsync(Context.RequestAborted);
+            var scopes = await db.PersonalKeyScopes.Where(s => s.KeyId == account.KeyId).Select(s => s.Scope).Take(5).ToListAsync(Context.RequestAborted);
+            if (projects.Count is < 1 or > 20 || scopes.Count is < 1 or > 4 || scopes.Any(s => !RestrictedToken.KnownScopes.Contains(s, StringComparer.Ordinal)))
+                return AuthenticateResult.Fail("Invalid restricted token configuration.");
+            identity.AddClaims(projects.Select(id => new Claim(RestrictedToken.ProjectClaim, id.ToString())));
+            identity.AddClaims(scopes.Select(scope => new Claim(RestrictedToken.ScopeClaim, scope)));
+        }
+        else if (account.Mode != PersonalKeyMode.LegacyUnrestricted) return AuthenticateResult.Fail("Unknown token mode.");
 
         return AuthenticateResult.Success(
             new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));

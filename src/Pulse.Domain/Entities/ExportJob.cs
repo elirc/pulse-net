@@ -6,6 +6,8 @@ public enum ExportJobStatus
     Running,
     Completed,
     Failed,
+    CancelRequested,
+    Cancelled,
 }
 
 /// <summary>
@@ -43,4 +45,20 @@ public class ExportJob
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset? CompletedAt { get; set; }
+    public Guid? Owner { get; set; }
+    public long AttemptGeneration { get; set; }
+    public DateTimeOffset? LeaseExpiresAt { get; set; }
+    public DateTimeOffset? LastHeartbeatAt { get; set; }
+    public string Consistency { get; set; } = "live";
+    public bool SnapshotReady { get; set; }
+    public DateTimeOffset? SnapshotCapturedAt { get; set; }
+    public Guid? InvalidatedByErasureJobId { get; set; }
+}
+
+public class ExportSnapshotRow
+{
+    public Guid JobId { get; set; }
+    public int Ordinal { get; set; }
+    public Guid ProjectId { get; set; }
+    public required string RowJson { get; set; }
 }

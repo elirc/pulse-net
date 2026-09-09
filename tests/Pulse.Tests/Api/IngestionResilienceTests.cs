@@ -31,7 +31,7 @@ public class IngestionResilienceTests : IClassFixture<PulseApiFactory>
     {
         var (projectId, _) = await CreateProjectAsync();
 
-        // Unparseable payload: permanent, no retry budget consumed.
+        // Permanent validation failure: one failed attempt, no delayed retries.
         EnqueueRaw(projectId, "not even json");
         RingAndWait();
         await TestIngestion.WaitForDrainAsync(_client);
@@ -39,7 +39,7 @@ public class IngestionResilienceTests : IClassFixture<PulseApiFactory>
         var letters = await GetAsync<List<DeadLetterResponse>>(
             $"/api/projects/{projectId}/ingestion/dead-letters");
         var letter = Assert.Single(letters);
-        Assert.Equal(0, letter.Attempts);
+        Assert.Equal(1, letter.Attempts);
         Assert.Contains("validation", letter.Error);
     }
 
@@ -60,13 +60,12 @@ public class IngestionResilienceTests : IClassFixture<PulseApiFactory>
     }
 
     [Fact]
-    public async Task TransientPoison_RetriesUpToMaxAttempts_ThenDeadLetters()
+    public async Task MalformedProperties_ArePermanentAndDoNotSpendTransientRetryDelays()
     {
         var (projectId, _) = await CreateProjectAsync();
 
-        // The envelope deserializes and validates, but the properties JSON
-        // blows up inside the capture pipeline — a transient-classified
-        // failure that burns all MaxAttempts before dead-lettering.
+        // The outer envelope parses, but nested properties are malformed.
+        // SR-10 validates the full envelope before attempting capture.
         EnqueueRaw(projectId, """{"Name":"boom","DistinctId":"u1","Timestamp":null,"PropertiesJson":"{corrupt"}""");
         RingAndWait();
         await TestIngestion.WaitForDrainAsync(_client, TimeSpan.FromSeconds(30));
@@ -74,8 +73,8 @@ public class IngestionResilienceTests : IClassFixture<PulseApiFactory>
         var letters = await GetAsync<List<DeadLetterResponse>>(
             $"/api/projects/{projectId}/ingestion/dead-letters");
         var letter = Assert.Single(letters);
-        Assert.Contains($"Failed after {IngestionProcessor.MaxAttempts} attempts", letter.Error);
-        Assert.Equal(IngestionProcessor.MaxAttempts - 1, letter.Attempts);
+        Assert.Contains("validation", letter.Error);
+        Assert.Equal(1, letter.Attempts);
     }
 
     // --- Change-tracker isolation ---------------------------------------------------

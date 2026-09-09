@@ -12,7 +12,6 @@ public static class DataManagementEndpoints
     {
         MapAnnotations(app);
         MapDefinitions(app);
-        MapPersonDeletion(app);
         return app;
     }
 
@@ -43,6 +42,10 @@ public static class DataManagementEndpoints
             {
                 errors["content"] = ["Annotation content is required."];
             }
+            else if (request.Content.Trim().Length > 2000)
+            {
+                errors["content"] = ["Annotation content must contain at most 2000 characters after trimming."];
+            }
 
             if (errors.Count > 0)
             {
@@ -67,6 +70,7 @@ public static class DataManagementEndpoints
             Guid projectId,
             DateOnly? from,
             DateOnly? to,
+            string? contentContains,
             int? limit,
             int? offset,
             HttpContext http,
@@ -81,7 +85,13 @@ public static class DataManagementEndpoints
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
+            if (from is { } rangeStart && to is { } rangeEnd && rangeStart > rangeEnd)
+                return InputRules.Problem("from", "from must not be after to.");
+            if (InputRules.Text(contentContains, 100, "contentContains", out var contentFilter) is { } invalid)
+                return invalid;
+
             var query = db.Annotations.Where(a => a.ProjectId == projectId);
+            if (contentFilter is not null) query = query.Where(a => a.Content.Contains(contentFilter));
             if (from is { } first)
             {
                 query = query.Where(a => a.Date >= first);
@@ -95,6 +105,7 @@ public static class DataManagementEndpoints
             var annotations = await query
                 .OrderBy(a => a.Date)
                 .ThenBy(a => a.CreatedAt)
+                .ThenBy(a => a.Id)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync(ct);
@@ -124,11 +135,11 @@ public static class DataManagementEndpoints
                 return Results.NotFound();
             }
 
-            if (request.Content is not null && string.IsNullOrWhiteSpace(request.Content))
+            if (request.Content is not null && (string.IsNullOrWhiteSpace(request.Content) || request.Content.Trim().Length > 2000))
             {
                 return Results.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    ["content"] = ["Annotation content must not be blank."],
+                    ["content"] = ["Annotation content must contain 1 to 2000 characters after trimming."],
                 });
             }
 
@@ -173,6 +184,7 @@ public static class DataManagementEndpoints
             Guid projectId,
             int? limit,
             int? offset,
+            string? namePrefix,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -185,8 +197,12 @@ public static class DataManagementEndpoints
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
+            if (InputRules.Text(namePrefix, 200, "namePrefix", out var prefix) is { } invalid) return invalid;
+            prefix = prefix?.ToLowerInvariant();
+
             var definitions = await db.EventDefinitions
                 .Where(d => d.ProjectId == projectId)
+                .Where(d => prefix == null || d.Name.ToLower().StartsWith(prefix))
                 .OrderBy(d => d.Name)
                 .Skip(skip)
                 .Take(take)
@@ -200,6 +216,7 @@ public static class DataManagementEndpoints
             Guid projectId,
             int? limit,
             int? offset,
+            string? type,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -212,8 +229,12 @@ public static class DataManagementEndpoints
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
+            if (InputRules.Choice(type, "type", ["string", "number", "boolean", "object", "array"], out var propertyType) is { } invalid)
+                return invalid;
+
             var definitions = await db.PropertyDefinitions
                 .Where(d => d.ProjectId == projectId)
+                .Where(d => propertyType == null || d.PropertyType == propertyType)
                 .OrderBy(d => d.Name)
                 .Skip(skip)
                 .Take(take)
@@ -222,53 +243,6 @@ public static class DataManagementEndpoints
                 .ToListAsync(ct);
 
             return Results.Ok(definitions);
-        });
-    }
-
-    private static void MapPersonDeletion(IEndpointRouteBuilder app)
-    {
-        // GDPR-style purge: the person, their distinct-id mappings, their
-        // events and their cohort memberships all go.
-        app.MapDelete("/api/projects/{projectId:guid}/persons/{personId:guid}", async (
-            Guid projectId,
-            Guid personId,
-            HttpContext http,
-            PulseDbContext db,
-            ProjectAccessService access,
-            CancellationToken ct) =>
-        {
-            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied)
-            {
-                return denied;
-            }
-
-            var person = await db.Persons
-                .SingleOrDefaultAsync(p => p.ProjectId == projectId && p.Id == personId, ct);
-
-            if (person is null)
-            {
-                return Results.NotFound();
-            }
-
-            await using var transaction = await db.Database.BeginTransactionAsync(ct);
-
-            var deletedEvents = await db.Events
-                .Where(e => e.ProjectId == projectId && e.PersonId == personId)
-                .ExecuteDeleteAsync(ct);
-
-            var deletedDistinctIds = await db.PersonDistinctIds
-                .Where(m => m.ProjectId == projectId && m.PersonId == personId)
-                .ExecuteDeleteAsync(ct);
-
-            await db.CohortPersons
-                .Where(cp => cp.PersonId == personId)
-                .ExecuteDeleteAsync(ct);
-
-            db.Persons.Remove(person);
-            await db.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-
-            return Results.Ok(new PersonDeletionResponse(personId, deletedEvents, deletedDistinctIds));
         });
     }
 

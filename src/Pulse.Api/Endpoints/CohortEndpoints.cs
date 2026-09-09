@@ -9,11 +9,12 @@ using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api.Endpoints;
 
-public static class CohortEndpoints
+public static partial class CohortEndpoints
 {
     public static IEndpointRouteBuilder MapCohortEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}/cohorts");
+        MapCohortEditingFeatures(group);
 
         group.MapPost("/", async (
             Guid projectId,
@@ -60,6 +61,8 @@ public static class CohortEndpoints
                 return Results.ValidationProblem(errors);
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await ProjectMaintenance.AssertWritableAsync(db, projectId, ct);
             var cohort = new Cohort
             {
                 ProjectId = projectId,
@@ -84,6 +87,7 @@ public static class CohortEndpoints
 
             await db.SaveChangesAsync(ct);
 
+            await transaction.CommitAsync(ct);
             return Results.Created(
                 $"/api/projects/{projectId}/cohorts/{cohort.Id}", ToResponse(cohort));
         });
@@ -154,9 +158,12 @@ public static class CohortEndpoints
                 return Results.NotFound();
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await ProjectMaintenance.AssertWritableAsync(db, projectId, ct);
             await db.CohortPersons.Where(cp => cp.CohortId == cohortId).ExecuteDeleteAsync(ct);
             db.Cohorts.Remove(cohort);
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return Results.NoContent();
         });
@@ -200,6 +207,8 @@ public static class CohortEndpoints
                 return denied;
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await ProjectMaintenance.AssertWritableAsync(db, projectId, ct);
             var cohort = await db.Cohorts
                 .SingleOrDefaultAsync(c => c.ProjectId == projectId && c.Id == cohortId, ct);
 
@@ -242,6 +251,7 @@ public static class CohortEndpoints
             await db.SaveChangesAsync(ct);
 
             var count = await db.CohortPersons.CountAsync(cp => cp.CohortId == cohortId, ct);
+            await transaction.CommitAsync(ct);
             return Results.Ok(new { added = known.Except(existing).Count(), total = count });
         });
 

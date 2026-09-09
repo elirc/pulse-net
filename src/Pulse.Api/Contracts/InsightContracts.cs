@@ -2,6 +2,10 @@ using System.Text.Json;
 
 namespace Pulse.Api.Contracts;
 
+public record PreviewInsightRequest(string? Type, JsonElement? Config);
+public record ReplaceInsightRequest(string? Name, string? Type, JsonElement? Config);
+public record MultiTrendRequest(List<string?>? Events, DateTimeOffset? From, DateTimeOffset? To, string? Interval);
+
 public record FunnelRequest(
     List<string>? Steps,
     DateTimeOffset? From,

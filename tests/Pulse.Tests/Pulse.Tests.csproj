@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Fixtures/legacy-schema.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Pulse.Api\Pulse.Api.csproj" />
   </ItemGroup>
 

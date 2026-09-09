@@ -5,7 +5,7 @@ namespace Pulse.Api.Ingestion;
 /// <summary>
 /// Background consumer of the ingestion queue. Wakes on the enqueue signal
 /// (or every second as a safety sweep) and processes batches until the queue
-/// is empty.
+/// has no eligible work. Delayed rows remain durable for a later sweep.
 /// </summary>
 public class IngestionWorker : BackgroundService
 {
@@ -55,7 +55,7 @@ public class IngestionWorker : BackgroundService
             var (processed, deadLettered) = await processor.ProcessPendingAsync(ct);
             if (processed + deadLettered == 0)
             {
-                break; // Queue drained.
+                break; // No eligible work/available lease; a later sweep rechecks durable state.
             }
         }
     }

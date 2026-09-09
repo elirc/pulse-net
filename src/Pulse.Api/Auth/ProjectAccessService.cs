@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Pulse.Infrastructure;
+using Pulse.Domain.Entities;
 
 namespace Pulse.Api.Auth;
 
@@ -33,7 +34,17 @@ public class ProjectAccessService
     /// Requires the caller to be a member of the project. Returns null when
     /// access is granted, otherwise the error result to short-circuit with.
     /// </summary>
-    public async Task<IResult?> RequireMemberAsync(HttpContext http, Guid projectId, CancellationToken ct)
+    public Task<IResult?> RequireMemberAsync(HttpContext http, Guid projectId, CancellationToken ct) =>
+        RequireRoleAsync(http, projectId, ProjectPermissionMatrix.Find(http)?.MinimumRole ?? ProjectRole.Admin, ct);
+
+    public async Task<ProjectRole?> GetRoleAsync(HttpContext http, Guid projectId, CancellationToken ct)
+    {
+        var userId = GetUserId(http.User);
+        return userId is null ? null : await _db.ProjectMemberships.Where(m => m.ProjectId == projectId && m.UserId == userId)
+            .Select(m => (ProjectRole?)m.Role).SingleOrDefaultAsync(ct);
+    }
+
+    public async Task<IResult?> RequireRoleAsync(HttpContext http, Guid projectId, ProjectRole minimum, CancellationToken ct)
     {
         var userId = GetUserId(http.User);
         if (userId is null)
@@ -44,10 +55,12 @@ public class ProjectAccessService
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        var isMember = await _db.ProjectMemberships
-            .AnyAsync(m => m.ProjectId == projectId && m.UserId == userId, ct);
-
-        return isMember ? null : Results.NotFound();
+        var role = await GetRoleAsync(http, projectId, ct);
+        if (role is null) return Results.NotFound();
+        if (RestrictedToken.CheckProject(http, projectId) is { } restricted) return restricted;
+        if (!Enum.IsDefined(role.Value) || role.Value < minimum)
+            return Results.Problem("Your project role does not permit this operation.", statusCode: StatusCodes.Status403Forbidden);
+        return await ProjectMaintenanceAccess.DenialAsync(http, projectId, _db, ct);
     }
 
     /// <summary>
@@ -60,11 +73,13 @@ public class ProjectAccessService
         var apiKey = http.Request.Headers["X-Api-Key"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(apiKey) && GetUserId(http.User) is null)
         {
+            if (ProjectPermissionMatrix.Find(http)?.AllowsReadKey != true)
+                return Results.Problem("This route does not accept a project read key.", statusCode: StatusCodes.Status401Unauthorized);
             var matches = await _db.Projects
                 .AnyAsync(p => p.Id == projectId && p.ReadKey == apiKey, ct);
 
             return matches
-                ? null
+                ? await ProjectMaintenanceAccess.DenialAsync(http, projectId, _db, ct)
                 : Results.Problem(
                     title: "Invalid read key",
                     detail: "Only the project's rk_live_ read key grants query access.",

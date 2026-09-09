@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Pulse.Infrastructure;
+using Pulse.Infrastructure.Schema;
 
 namespace Pulse.Tests;
 
@@ -29,6 +31,9 @@ public class PulseApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Preserve warnings/errors without collecting megabytes of successful SQL
+        // statements in each test result (especially the 1,000-event boundary).
+        builder.ConfigureLogging(logging => logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning));
         builder.ConfigureServices(services =>
         {
             var descriptor = services.Single(d =>
@@ -37,6 +42,9 @@ public class PulseApiFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<PulseDbContext>(options =>
                 options.UseSqlite(_connectionString));
+            services.AddSingleton<IDatabaseInitializer, TestDatabaseInitializer>();
+            services.AddSingleton(new Pulse.Infrastructure.Services.SuppressionKeyRing(1,
+                new Dictionary<int, byte[]> { [1] = System.Security.Cryptography.SHA256.HashData("pulse-tests-only-suppression-key"u8) }));
         });
     }
 
@@ -48,4 +56,16 @@ public class PulseApiFactory : WebApplicationFactory<Program>
             _keepAlive.Dispose();
         }
     }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync().ConfigureAwait(false);
+        await _keepAlive.DisposeAsync().ConfigureAwait(false);
+    }
+}
+
+/// <summary>Only the isolated test host creates/upgrades its private database automatically.</summary>
+public sealed class TestDatabaseInitializer : IDatabaseInitializer
+{
+    public Task InitializeAsync(PulseDbContext db, CancellationToken ct = default) => db.Database.MigrateAsync(ct);
 }

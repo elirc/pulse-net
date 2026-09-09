@@ -23,6 +23,7 @@ public static partial class FeatureFlagEndpoints
             HttpContext http,
             CaptureService capture,
             FeatureFlagService flags,
+            PulseDbContext db,
             CancellationToken ct) =>
         {
             var apiKey = request.ApiKey
@@ -52,17 +53,23 @@ public static partial class FeatureFlagEndpoints
                 });
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await ProjectMaintenance.AssertWritableAsync(db, project.Id, ct);
             var values = await flags.EvaluateAllAsync(project.Id, request.DistinctId.Trim(), ct);
+            await transaction.CommitAsync(ct);
             return Results.Ok(new DecideResponse(values));
         });
 
         var group = app.MapGroup("/api/projects/{projectId:guid}/feature-flags");
+        MapFlagDiagnosticFeatures(group);
+        MapFlagGovernanceFeatures(group);
 
         group.MapPost("/", async (
             Guid projectId,
             CreateFeatureFlagRequest request,
             HttpContext http,
             PulseDbContext db,
+            FlagMutationService mutations,
             ProjectAccessService access,
             CancellationToken ct) =>
         {
@@ -79,7 +86,7 @@ public static partial class FeatureFlagEndpoints
                 errors["key"] = ["Flag key is required and may only contain letters, digits, '-' and '_'."];
             }
 
-            if (!Enum.TryParse<FeatureFlagType>(request.Type, ignoreCase: true, out var type))
+            if (!Enum.TryParse<FeatureFlagType>(request.Type, ignoreCase: true, out var type) || !Enum.IsDefined(type))
             {
                 errors["type"] = ["Type must be 'boolean' or 'multivariate'."];
             }
@@ -120,8 +127,9 @@ public static partial class FeatureFlagEndpoints
                 VariantsJson = variantsJson,
             };
 
-            db.FeatureFlags.Add(flag);
-            await db.SaveChangesAsync(ct);
+            var created = await mutations.CreateAsync(flag, AuthenticatedActor.From(http), ct);
+            if (created.Status != 201) return FlagFailure(created.Status);
+            http.Response.Headers.ETag = FlagPrecondition.ETag(flag);
 
             return Results.Created(
                 $"/api/projects/{projectId}/feature-flags/{flag.Key}", ToResponse(flag));
@@ -131,6 +139,8 @@ public static partial class FeatureFlagEndpoints
             Guid projectId,
             int? limit,
             int? offset,
+            bool? active,
+            string? keyPrefix,
             HttpContext http,
             PulseDbContext db,
             ProjectAccessService access,
@@ -143,8 +153,13 @@ public static partial class FeatureFlagEndpoints
             var take = Math.Clamp(limit ?? 100, 1, 500);
             var skip = Math.Max(offset ?? 0, 0);
 
+            if (InputRules.Text(keyPrefix, 200, "keyPrefix", out var prefix) is { } invalid) return invalid;
+            prefix = prefix?.ToLowerInvariant();
+
             var flags = await db.FeatureFlags
                 .Where(f => f.ProjectId == projectId)
+                .Where(f => active == null || f.Active == active)
+                .Where(f => prefix == null || f.Key.ToLower().StartsWith(prefix))
                 .OrderBy(f => f.Key)
                 .Skip(skip)
                 .Take(take)
@@ -191,7 +206,9 @@ public static partial class FeatureFlagEndpoints
             var flag = await db.FeatureFlags
                 .SingleOrDefaultAsync(f => f.ProjectId == projectId && f.Key == key, ct);
 
-            return flag is null ? Results.NotFound() : Results.Ok(ToResponse(flag));
+            if (flag is null) return Results.NotFound();
+            http.Response.Headers.ETag = FlagPrecondition.ETag(flag);
+            return Results.Ok(ToResponse(flag));
         });
 
         group.MapPut("/{key}", async (
@@ -200,6 +217,7 @@ public static partial class FeatureFlagEndpoints
             UpdateFeatureFlagRequest request,
             HttpContext http,
             PulseDbContext db,
+            FlagMutationService mutations,
             ProjectAccessService access,
             CancellationToken ct) =>
         {
@@ -208,13 +226,15 @@ public static partial class FeatureFlagEndpoints
                 return denied;
             }
 
-            var flag = await db.FeatureFlags
+            var flag = await db.FeatureFlags.AsNoTracking()
                 .SingleOrDefaultAsync(f => f.ProjectId == projectId && f.Key == key, ct);
 
             if (flag is null)
             {
                 return Results.NotFound();
             }
+
+            if (FlagPrecondition.Require(http, flag, out var expectedRevision) is { } precondition) return precondition;
 
             var errors = new Dictionary<string, string[]>();
             if (!TryValidateShared(request.RolloutPercentage, request.Filters, request.Variants,
@@ -234,7 +254,9 @@ public static partial class FeatureFlagEndpoints
             flag.FiltersJson = request.Filters is null ? flag.FiltersJson : filtersJson;
             flag.VariantsJson = request.Variants is null ? flag.VariantsJson : variantsJson;
 
-            await db.SaveChangesAsync(ct);
+            var updated = await mutations.UpdateAsync(flag, expectedRevision, AuthenticatedActor.From(http), ct);
+            if (updated.Status != 200) return FlagFailure(updated.Status);
+            http.Response.Headers.ETag = FlagPrecondition.ETag(flag);
 
             return Results.Ok(ToResponse(flag));
         });
@@ -244,6 +266,7 @@ public static partial class FeatureFlagEndpoints
             string key,
             HttpContext http,
             PulseDbContext db,
+            FlagMutationService mutations,
             ProjectAccessService access,
             CancellationToken ct) =>
         {
@@ -252,7 +275,7 @@ public static partial class FeatureFlagEndpoints
                 return denied;
             }
 
-            var flag = await db.FeatureFlags
+            var flag = await db.FeatureFlags.AsNoTracking()
                 .SingleOrDefaultAsync(f => f.ProjectId == projectId && f.Key == key, ct);
 
             if (flag is null)
@@ -260,10 +283,9 @@ public static partial class FeatureFlagEndpoints
                 return Results.NotFound();
             }
 
-            db.FeatureFlags.Remove(flag);
-            await db.SaveChangesAsync(ct);
-
-            return Results.NoContent();
+            if (FlagPrecondition.Require(http, flag, out var expectedRevision) is { } precondition) return precondition;
+            var status = await mutations.DeleteAsync(flag, expectedRevision, AuthenticatedActor.From(http), ct);
+            return status == 204 ? Results.NoContent() : FlagFailure(status);
         });
 
         return app;
@@ -283,32 +305,7 @@ public static partial class FeatureFlagEndpoints
         out string filtersJson,
         out string variantsJson)
     {
-        rollout = rolloutPercentage ?? 100;
-        if (rollout is < 0 or > 100)
-        {
-            errors["rolloutPercentage"] = ["rolloutPercentage must be between 0 and 100."];
-        }
-
-        filtersJson = filters is { ValueKind: JsonValueKind.Array } f ? f.GetRawText() : "[]";
-        if (!PropertyFilterParser.TryParse(filtersJson, out _, out var filterError, allowEventTarget: false))
-        {
-            errors["filters"] = [filterError];
-        }
-
-        variantsJson = variants is { ValueKind: JsonValueKind.Array } v ? v.GetRawText() : "[]";
-        if (type == FeatureFlagType.Multivariate)
-        {
-            if (!FlagVariantParser.TryParse(variantsJson, out _, out var variantError))
-            {
-                errors["variants"] = [variantError];
-            }
-        }
-        else if (variantsJson != "[]")
-        {
-            errors["variants"] = ["Boolean flags cannot have variants."];
-        }
-
-        return errors.Count == 0;
+        return FlagConfigurationValidator.TryValidate(rolloutPercentage, filters, variants, type, errors, out rollout, out filtersJson, out variantsJson);
     }
 
     private static FeatureFlagResponse ToResponse(FeatureFlag flag) =>
@@ -322,5 +319,10 @@ public static partial class FeatureFlagEndpoints
             flag.RolloutPercentage,
             JsonSerializer.Deserialize<JsonElement>(flag.FiltersJson),
             JsonSerializer.Deserialize<JsonElement>(flag.VariantsJson),
-            flag.CreatedAt);
+            flag.CreatedAt,
+            flag.Revision);
+
+    private static IResult FlagFailure(int status) => status == 404 ? Results.NotFound() : Results.Problem(statusCode: status,
+        detail: status switch { 412 => "The flag changed. Fetch current state and reconcile your edit.", 409 => "The requested change conflicts with current state.",
+            400 => "The configuration exceeds the supported size or shape.", _ => "Current project permissions do not permit this change." });
 }

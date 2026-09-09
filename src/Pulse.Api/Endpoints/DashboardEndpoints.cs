@@ -8,11 +8,13 @@ using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api.Endpoints;
 
-public static class DashboardEndpoints
+public static partial class DashboardEndpoints
 {
     public static IEndpointRouteBuilder MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}/dashboards");
+        MapDashboardCompositionFeatures(group);
+        MapDashboardTemplateFeatures(group);
 
         group.MapPost("/", async (
             Guid projectId,
@@ -165,9 +167,12 @@ public static class DashboardEndpoints
                 return Results.NotFound();
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await ProjectMaintenance.AssertWritableAsync(db, projectId, ct);
             await db.DashboardTiles.Where(t => t.DashboardId == dashboardId).ExecuteDeleteAsync(ct);
             db.Dashboards.Remove(dashboard);
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return Results.NoContent();
         });
@@ -188,6 +193,8 @@ public static class DashboardEndpoints
                 return denied;
             }
 
+            // Serialize the existence check and insert with guarded insight deletion.
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             var dashboard = await db.Dashboards
                 .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == dashboardId, ct);
 
@@ -226,6 +233,7 @@ public static class DashboardEndpoints
 
             db.DashboardTiles.Add(tile);
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return Results.Created(
                 $"/api/projects/{projectId}/dashboards/{dashboardId}/tiles/{tile.Id}",

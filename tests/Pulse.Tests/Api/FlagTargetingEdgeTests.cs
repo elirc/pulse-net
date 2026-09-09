@@ -200,7 +200,11 @@ public class FlagTargetingEdgeTests : IClassFixture<PulseApiFactory>
 
     private async Task<T> PutAsync<T>(string url, object payload)
     {
-        var response = await _client.PutAsJsonAsync(url, payload);
+        var current = await _client.GetAsync(url);
+        current.EnsureSuccessStatusCode();
+        using var request = new HttpRequestMessage(HttpMethod.Put, url) { Content = JsonContent.Create(payload) };
+        request.Headers.IfMatch.Add(current.Headers.ETag!);
+        var response = await _client.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<T>())!;
     }

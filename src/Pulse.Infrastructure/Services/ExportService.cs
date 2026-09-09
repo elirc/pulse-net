@@ -26,8 +26,9 @@ public record PersonExportPage(IReadOnlyList<PersonExportRow> Persons, string? N
 /// <summary>
 /// Data export: cursor-paginated event/person reads, plus CSV/JSON rendering
 /// shared by the synchronous endpoints and the async job processor. Cursors
-/// encode the last scanned row's sort key, so pages are stable under new
-/// writes (events only ever append after the cursor).
+/// encode the last scanned row's sort key and handle ties on unchanged data.
+/// This is a live traversal: late inserts before the consumed position require
+/// restarting, and the cursor is not a snapshot of the matching dataset.
 /// </summary>
 public class ExportService
 {

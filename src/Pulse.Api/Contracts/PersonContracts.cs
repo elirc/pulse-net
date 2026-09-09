@@ -2,6 +2,8 @@ using System.Text.Json;
 
 namespace Pulse.Api.Contracts;
 
+public record PersonCountResponse(int Count);
+
 public record PersonResponse(
     Guid Id,
     Guid ProjectId,

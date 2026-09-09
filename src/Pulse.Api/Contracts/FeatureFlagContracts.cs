@@ -34,7 +34,8 @@ public record FeatureFlagResponse(
     double RolloutPercentage,
     JsonElement Filters,
     JsonElement Variants,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    long Revision = 1);
 
 /// <summary>Everything an SDK needs to evaluate flags locally without calling /decide per user.</summary>
 public record LocalEvaluationResponse(IReadOnlyList<FeatureFlagResponse> Flags);
@@ -49,3 +50,9 @@ public record DecideRequest
 }
 
 public record DecideResponse(Dictionary<string, object> FeatureFlags);
+
+public record ExplainFlagRequest(string? DistinctId);
+public record EvaluateFlagBatchRequest(List<string>? DistinctIds, List<string>? Keys);
+public record CloneFlagRequest(string? Key, string? Name);
+public record RestoreFlagRequest(long TargetRevision);
+public record ScheduleFlagRequest(DateTimeOffset ExecuteAt, double RolloutPercentage, long ExpectedRevision);

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api;
 
@@ -26,6 +27,8 @@ public class RequestLoggingMiddleware
         }
 
         var stopwatch = Stopwatch.StartNew();
+        using var captureTrace = context.Request.Path == "/capture" ? IngestionTrace.Producer("capture") : null;
+        if (captureTrace is not null) context.Response.Headers["X-Trace-Id"] = captureTrace.TraceId.ToString();
         try
         {
             await _next(context);
@@ -34,11 +37,13 @@ public class RequestLoggingMiddleware
         {
             stopwatch.Stop();
             _logger.LogInformation(
-                "HTTP {Method} {Path} responded {StatusCode} in {ElapsedMs}ms",
+                "HTTP {Method} {Path} responded {StatusCode} in {ElapsedMs}ms trace {TraceId} span {SpanId}",
                 context.Request.Method,
-                context.Request.Path.Value,
+                (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "(unmatched)",
                 context.Response.StatusCode,
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                Activity.Current?.TraceId.ToString() ?? context.Response.Headers["X-Trace-Id"].FirstOrDefault(),
+                Activity.Current?.SpanId.ToString());
         }
     }
 }

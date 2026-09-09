@@ -3,23 +3,52 @@ using Pulse.Api.Contracts;
 using Pulse.Domain.Entities;
 using Pulse.Infrastructure;
 using Pulse.Infrastructure.Services;
+using Pulse.Api.Auth;
 
 namespace Pulse.Api.Endpoints;
 
 public static class CaptureEndpoints
 {
-    public const int MaxBatchSize = 1000;
+    public const int MaxBatchSize = CaptureRequestParser.MaxBatchSize;
 
     public static IEndpointRouteBuilder MapCaptureEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapPost("/api/projects/{projectId:guid}/capture/validate", async (Guid projectId, HttpContext http,
+            ProjectAccessService access, CancellationToken ct) =>
+        {
+            if (await access.RequireMemberAsync(http, projectId, ct) is { } denied) return denied;
+            var (body, bodyError) = await LimitedJsonBody.ReadAsync(http.Request, 1024 * 1024, ct);
+            if (bodyError is not null) return bodyError;
+            if (body is not { ValueKind: JsonValueKind.Object } value) return InputRules.Problem("body", "Body must be a capture object.");
+            if (value.EnumerateObject().Any(p => p.Name.Equals("api_key", StringComparison.OrdinalIgnoreCase)))
+                return InputRules.Problem("api_key", "Do not supply a credential; the authorized route selects the project.");
+            CaptureRequest? request;
+            try { request = value.Deserialize<CaptureRequest>(JsonSerializerOptions.Web); }
+            catch (JsonException) { return InputRules.Problem("body", "Capture fields have invalid JSON types."); }
+            var (events, errors) = CaptureRequestParser.Parse(request!);
+            if (events.Any(e => e.ClientEventId is not null) && !CaptureFingerprint.HasUniqueObjectMembers(value))
+                errors["body"] = ["ID-bearing payloads must not contain duplicate object member names."];
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+            http.Response.Headers.CacheControl = "no-store";
+            return Results.Ok(new { valid = true, eventCount = events.Count, preview = events.Take(3).Select(e => new
+                { @event = e.Name, distinctId = e.DistinctId, timestamp = e.Timestamp, eventId = e.ClientEventId, properties = JsonSerializer.Deserialize<JsonElement>(e.PropertiesJson) }),
+                previewTruncated = events.Count > 3 });
+        });
+
         app.MapPost("/capture", async (
-            CaptureRequest request,
             HttpContext http,
             CaptureService capture,
-            PulseDbContext db,
-            IngestionSignal signal,
+            QueueAdmissionService admission,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
+            var (body, bodyError) = await LimitedJsonBody.ReadAsync(http.Request, 30 * 1024 * 1024, ct);
+            if (bodyError is not null) return bodyError;
+            if (body is not { ValueKind: JsonValueKind.Object } value) return InputRules.Problem("body", "Body must be a capture object.");
+            CaptureRequest? request;
+            try { request = value.Deserialize<CaptureRequest>(JsonSerializerOptions.Web); }
+            catch (JsonException) { return InputRules.Problem("body", "Capture fields have invalid JSON types; event_id must be a UUID."); }
+            if (request is null) return InputRules.Problem("body", "Body must be a capture object.");
             var apiKey = request.ApiKey
                          ?? http.Request.Headers["X-Api-Key"].FirstOrDefault();
 
@@ -39,112 +68,34 @@ public static class CaptureEndpoints
                     statusCode: StatusCodes.Status401Unauthorized);
             }
 
-            var (events, errors) = Unwrap(request);
+            var (events, errors) = CaptureRequestParser.Parse(request);
+            var hasIds = events.Any(e => e.ClientEventId is not null);
+            if (hasIds && !CaptureFingerprint.HasUniqueObjectMembers(value)) errors["body"] = ["ID-bearing payloads must not contain duplicate object member names."];
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors);
             }
 
-            // v2 ingestion: append to the durable queue and return 202; the
-            // background worker validates and persists asynchronously.
-            foreach (var incoming in events)
-            {
-                db.QueuedEvents.Add(new QueuedEvent
-                {
-                    ProjectId = project.Id,
-                    PayloadJson = JsonSerializer.Serialize(incoming),
-                });
-            }
-
-            await db.SaveChangesAsync(ct);
-            signal.Ring();
-
-            return Results.Accepted(value: new CaptureResponse("queued", events.Count));
+            var receiptHeader = http.Request.Headers["X-Capture-Receipt"];
+            if (receiptHeader.Count > 1 || (receiptHeader.Count == 1 && !bool.TryParse(receiptHeader[0], out _)))
+                return InputRules.Problem("X-Capture-Receipt", "Use true or false.");
+            var wantsReceipt = receiptHeader.Count == 1 && bool.Parse(receiptHeader[0]!);
+            if ((hasIds && !configuration.GetValue("Capture:IdempotencyEnabled", true)) || (wantsReceipt && !configuration.GetValue("Capture:ReceiptsEnabled", true)))
+                return Results.Problem("The requested admission capability is temporarily unavailable.", statusCode: 503);
+            var result = await admission.AdmitAsync(project.Id, events, wantsReceipt, ct);
+            if (result.Status != 202) return AdmissionFailure(http, result.Status, result.Code!);
+            if (!hasIds && !wantsReceipt) return Results.Accepted(value: new CaptureResponse("queued", result.Queued));
+            return Results.Accepted(value: new { status = "queued", result.Queued, result.Deduplicated, result.ReceiptId,
+                statusUrl = result.ReceiptId is { } receiptId ? $"/api/projects/{project.Id}/capture-receipts/{receiptId}" : null });
         }).RequireRateLimiting("capture");
 
         return app;
     }
 
-    private static (List<IncomingEvent> Events, Dictionary<string, string[]> Errors) Unwrap(
-        CaptureRequest request)
+    internal static IResult AdmissionFailure(HttpContext http, int status, string code)
     {
-        var events = new List<IncomingEvent>();
-        var errors = new Dictionary<string, string[]>();
-
-        if (request.Batch is not null)
-        {
-            if (request.Batch.Count == 0)
-            {
-                errors["batch"] = ["Batch must contain at least one event."];
-                return (events, errors);
-            }
-
-            if (request.Batch.Count > MaxBatchSize)
-            {
-                errors["batch"] = [$"Batch exceeds the maximum of {MaxBatchSize} events."];
-                return (events, errors);
-            }
-
-            for (var i = 0; i < request.Batch.Count; i++)
-            {
-                var item = request.Batch[i];
-                var itemErrors = Validate(item.Event, item.DistinctId, $"batch[{i}].");
-                foreach (var (key, value) in itemErrors)
-                {
-                    errors[key] = value;
-                }
-
-                if (itemErrors.Count == 0)
-                {
-                    events.Add(ToIncoming(item.Event!, item.DistinctId!, item.Timestamp, item.Properties));
-                }
-            }
-
-            return (events, errors);
-        }
-
-        var singleErrors = Validate(request.Event, request.DistinctId, prefix: string.Empty);
-        foreach (var (key, value) in singleErrors)
-        {
-            errors[key] = value;
-        }
-
-        if (singleErrors.Count == 0)
-        {
-            events.Add(ToIncoming(request.Event!, request.DistinctId!, request.Timestamp, request.Properties));
-        }
-
-        return (events, errors);
+        if (status == 429) http.Response.Headers.RetryAfter = "1";
+        return Results.Problem(statusCode: status, title: code, extensions: new Dictionary<string, object?> { ["code"] = code });
     }
 
-    private static Dictionary<string, string[]> Validate(string? eventName, string? distinctId, string prefix)
-    {
-        var errors = new Dictionary<string, string[]>();
-
-        if (string.IsNullOrWhiteSpace(eventName))
-        {
-            errors[$"{prefix}event"] = ["Event name is required."];
-        }
-
-        if (string.IsNullOrWhiteSpace(distinctId))
-        {
-            errors[$"{prefix}distinct_id"] = ["distinct_id is required."];
-        }
-
-        return errors;
-    }
-
-    private static IncomingEvent ToIncoming(
-        string eventName,
-        string distinctId,
-        DateTimeOffset? timestamp,
-        JsonElement? properties)
-    {
-        var propertiesJson =
-            properties is { ValueKind: JsonValueKind.Object } element
-                ? element.GetRawText()
-                : "{}";
-
-        return new IncomingEvent(eventName.Trim(), distinctId.Trim(), timestamp, propertiesJson);
-    }
 }

@@ -42,8 +42,11 @@ public class FeatureFlagTests : IClassFixture<PulseApiFactory>
             $"/api/projects/{projectId}/feature-flags");
         Assert.Single(list);
 
-        var delete = await _client.DeleteAsync(
-            $"/api/projects/{projectId}/feature-flags/new-onboarding");
+        var deletePath = $"/api/projects/{projectId}/feature-flags/new-onboarding";
+        var current = await _client.GetAsync(deletePath);
+        using var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, deletePath);
+        deleteRequest.Headers.IfMatch.Add(current.Headers.ETag!);
+        var delete = await _client.SendAsync(deleteRequest);
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
     }
 
@@ -325,7 +328,11 @@ public class FeatureFlagTests : IClassFixture<PulseApiFactory>
 
     private async Task<T> PutAsync<T>(string url, object payload)
     {
-        var response = await _client.PutAsJsonAsync(url, payload);
+        var current = await _client.GetAsync(url);
+        current.EnsureSuccessStatusCode();
+        using var request = new HttpRequestMessage(HttpMethod.Put, url) { Content = JsonContent.Create(payload) };
+        request.Headers.IfMatch.Add(current.Headers.ETag!);
+        var response = await _client.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<T>())!;
     }

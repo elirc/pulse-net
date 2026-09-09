@@ -19,6 +19,7 @@ public class FeatureFlag
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public Guid ProjectId { get; set; }
+    public long Revision { get; set; } = 1;
 
     /// <summary>Stable key SDKs ask for, e.g. <c>new-onboarding</c>. Unique per project.</summary>
     public required string Key { get; set; }

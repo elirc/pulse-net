@@ -9,11 +9,13 @@ using Pulse.Infrastructure.Services;
 
 namespace Pulse.Api.Endpoints;
 
-public static class InsightEndpoints
+public static partial class InsightEndpoints
 {
     public static IEndpointRouteBuilder MapInsightEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects/{projectId:guid}/insights");
+        MapInsightEditingFeatures(group);
+        MapAnalyticsCompositionFeatures(group);
 
         group.MapGet("/trend", async (
             Guid projectId,

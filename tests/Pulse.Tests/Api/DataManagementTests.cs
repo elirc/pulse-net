@@ -119,7 +119,7 @@ public class DataManagementTests : IClassFixture<PulseApiFactory>
         Assert.Single(properties);
     }
 
-    // --- Person deletion (GDPR) ---------------------------------------------------
+    // --- Asynchronous person erasure --------------------------------------------
 
     [Fact]
     public async Task DeletePerson_PurgesPersonEventsAndMappings()
@@ -135,10 +135,20 @@ public class DataManagementTests : IClassFixture<PulseApiFactory>
 
         var response = await _client.DeleteAsync(
             $"/api/projects/{projectId}/persons/{doomed.Id}");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var receipt = (await response.Content.ReadFromJsonAsync<PersonDeletionResponse>())!;
-        Assert.Equal(2, receipt.DeletedEvents);
-        Assert.Equal(1, receipt.DeletedDistinctIds);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var accepted = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var statusUrl = accepted.GetProperty("statusUrl").GetString()!;
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        JsonElement status;
+        do
+        {
+            status = await _client.GetFromJsonAsync<JsonElement>(statusUrl, deadline.Token);
+            if (status.GetProperty("job").GetProperty("status").GetString() == "completed") break;
+            Assert.DoesNotContain(status.GetProperty("job").GetProperty("status").GetString(), new[] { "failed", "needsReview" });
+            await Task.Delay(50, deadline.Token);
+        } while (true);
+        Assert.Equal(2, status.GetProperty("job").GetProperty("removedEvents").GetInt64());
+        Assert.Equal(1, status.GetProperty("job").GetProperty("removedAliases").GetInt64());
 
         // Person, mapping and events are gone; other persons untouched.
         Assert.Equal(HttpStatusCode.NotFound,

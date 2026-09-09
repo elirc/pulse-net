@@ -204,22 +204,22 @@ public class BoundaryTests : IClassFixture<PulseApiFactory>
     [Fact]
     public async Task Capture_RateLimit_RecoversAfterTheWindowResets()
     {
-        // Tiny dedicated limiter: 2 requests per 1-second window.
+        // Dedicated limiter: 2 requests per 5-second window. Leave scheduler
+        // headroom on a loaded machine and avoid database I/O between permits.
         using var limitedFactory = _factory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("RateLimiting:Capture:PermitLimit", "2");
-            builder.UseSetting("RateLimiting:Capture:WindowSeconds", "1");
+            builder.UseSetting("RateLimiting:Capture:WindowSeconds", "5");
         });
         using var client = limitedFactory.CreateClient();
 
         var payload = new
         {
-            api_key = "pk_live_ffffffffffffffffffffffffffffffff",
             @event = "x",
             distinct_id = "u1",
         };
 
-        // Exhaust the window (401: unknown key, but the request was admitted)...
+        // Exhaust the window (401: missing key, admitted without a DB lookup)...
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/capture", payload)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/capture", payload)).StatusCode);
 
@@ -227,7 +227,7 @@ public class BoundaryTests : IClassFixture<PulseApiFactory>
         Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync("/capture", payload)).StatusCode);
 
         // ...and once the window rolls over, capture works again.
-        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        await Task.Delay(TimeSpan.FromSeconds(5.5));
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/capture", payload)).StatusCode);
     }
 

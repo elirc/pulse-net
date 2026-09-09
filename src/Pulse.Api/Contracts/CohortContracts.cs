@@ -23,3 +23,8 @@ public record CohortResponse(
 public record CohortMembersResponse(Guid CohortId, int Count, IReadOnlyList<Guid> PersonIds);
 
 public record ModifyCohortMembersRequest(List<Guid>? PersonIds);
+
+public record PreviewCohortRequest(JsonElement? Rules, int? SampleLimit);
+public record ReplaceCohortRulesRequest(JsonElement? Rules);
+public record SnapshotCohortRequest(string? Name);
+public record ReplaceCohortMembersRequest(List<Guid>? PersonIds);

@@ -59,13 +59,19 @@ public class CohortService
             return [];
         }
 
+        return await EvaluateRulesAsync(cohort.ProjectId, rules, _clock.GetUtcNow(), ct);
+    }
+
+    /// <summary>Shared stored/preview/snapshot evaluation. Time is captured once by the caller.</summary>
+    public async Task<HashSet<Guid>> EvaluateRulesAsync(Guid projectId, IReadOnlyList<CohortRule> rules, DateTimeOffset evaluatedAt, CancellationToken ct = default)
+    {
         HashSet<Guid>? members = null;
 
         foreach (var rule in rules)
         {
             var ruleMembers = rule.Kind == CohortRuleKind.Property
-                ? await EvaluatePropertyRuleAsync(cohort.ProjectId, rule, ct)
-                : await EvaluateBehaviorRuleAsync(cohort.ProjectId, rule, ct);
+                ? await EvaluatePropertyRuleAsync(projectId, rule, ct)
+                : await EvaluateBehaviorRuleAsync(projectId, rule, evaluatedAt, ct);
 
             if (members is null)
             {
@@ -104,9 +110,10 @@ public class CohortService
     private async Task<HashSet<Guid>> EvaluateBehaviorRuleAsync(
         Guid projectId,
         CohortRule rule,
+        DateTimeOffset evaluatedAt,
         CancellationToken ct)
     {
-        var since = _clock.GetUtcNow().AddDays(-rule.Days);
+        var since = evaluatedAt.AddDays(-rule.Days);
 
         var matches = await _db.Events
             .Where(e => e.ProjectId == projectId

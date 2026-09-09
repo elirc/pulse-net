@@ -57,6 +57,9 @@ public class DemoDataSeeder
             ReadKey = ApiKeyGenerator.NewReadKey(),
         };
         _db.Projects.Add(project);
+        _db.ProjectIngestionStates.Add(new ProjectIngestionState { ProjectId = project.Id });
+        _db.ProjectIngestionLeases.Add(new ProjectIngestionLease { ProjectId = project.Id });
+        _db.ProjectRetentionPolicies.Add(new ProjectRetentionPolicy { ProjectId = project.Id });
 
         // A demo operator account so the management API is usable immediately.
         // The email gets a random suffix so repeated seeds don't collide on
@@ -73,6 +76,7 @@ public class DemoDataSeeder
         {
             ProjectId = project.Id,
             UserId = demoUser.Id,
+            Role = ProjectRole.Admin,
         });
         await _db.SaveChangesAsync(ct);
 

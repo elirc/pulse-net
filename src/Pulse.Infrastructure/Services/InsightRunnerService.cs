@@ -17,7 +17,12 @@ public record InsightRunResult(bool Ok, object? Result, string? Error)
 /// query endpoints (same defaults, same filter JSON) and degrades to a
 /// per-insight error instead of failing the whole refresh.
 /// </summary>
-public class InsightRunnerService
+public interface IInsightRunner
+{
+    Task<InsightRunResult> RunAsync(Insight insight, CancellationToken ct = default);
+}
+
+public class InsightRunnerService : IInsightRunner
 {
     private readonly QueryService _queries;
     private readonly TimeProvider _clock;

@@ -13,10 +13,12 @@ public static class TestIngestion
     public static async Task WaitForDrainAsync(HttpClient client, TimeSpan? timeout = null)
     {
         var deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(15));
+        JsonElement? lastMetrics = null;
 
         while (DateTimeOffset.UtcNow < deadline)
         {
             var metrics = await client.GetFromJsonAsync<JsonElement>("/api/ingestion/metrics");
+            lastMetrics = metrics;
             if (metrics.GetProperty("pending").GetInt32() == 0)
             {
                 return;
@@ -25,6 +27,6 @@ public static class TestIngestion
             await Task.Delay(20);
         }
 
-        throw new TimeoutException("Ingestion queue did not drain in time.");
+        throw new TimeoutException($"Ingestion queue did not drain in time. Last metrics: {lastMetrics?.GetRawText() ?? "unavailable"}");
     }
 }

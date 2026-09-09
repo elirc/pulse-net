@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Pulse.Api.Auth;
 using Pulse.Api.Contracts;
 using Pulse.Domain;
@@ -95,7 +97,14 @@ public static class AuthEndpoints
                 : Results.Ok(ToUserResponse(user));
         }).RequireAuthorization();
 
-        var keys = app.MapGroup("/api/personal-api-keys").RequireAuthorization();
+        var keys = app.MapGroup("/api/personal-api-keys").RequireAuthorization()
+            .AddEndpointFilter(async (context, next) =>
+            {
+                var jwt = await context.HttpContext.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
+                return jwt.Succeeded ? await next(context)
+                    : Results.Problem("Personal token management requires a JWT session.", statusCode: 403);
+            });
+        MapRestrictedKeyCreation(keys);
 
         keys.MapPost("/", async (
             CreatePersonalApiKeyRequest request,
@@ -125,6 +134,7 @@ public static class AuthEndpoints
             db.PersonalApiKeys.Add(key);
             await db.SaveChangesAsync(ct);
 
+            http.Response.Headers.CacheControl = "no-store";
             return Results.Created(
                 $"/api/personal-api-keys/{key.Id}",
                 new PersonalApiKeyCreatedResponse(key.Id, key.Name, plaintext, key.CreatedAt));
@@ -144,7 +154,8 @@ public static class AuthEndpoints
                 .ToListAsync(ct);
 
             return Results.Ok(list.Select(k =>
-                new PersonalApiKeyResponse(k.Id, k.Name, k.KeySuffix, k.CreatedAt)));
+                new PersonalApiKeyResponse(k.Id, k.Name, k.KeySuffix, k.CreatedAt,
+                    k.Mode == PersonalKeyMode.Restricted ? "restricted" : "legacyUnrestricted", k.ExpiresAt)));
         });
 
         keys.MapDelete("/{keyId:guid}", async (
@@ -163,13 +174,46 @@ public static class AuthEndpoints
                 return Results.NotFound();
             }
 
-            db.PersonalApiKeys.Remove(key);
-            await db.SaveChangesAsync(ct);
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await db.PersonalKeyProjects.Where(p => p.KeyId == keyId).ExecuteDeleteAsync(ct);
+            await db.PersonalKeyScopes.Where(s => s.KeyId == keyId).ExecuteDeleteAsync(ct);
+            await db.PersonalApiKeys.Where(k => k.Id == keyId && k.UserId == userId).ExecuteDeleteAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return Results.NoContent();
         });
 
         return app;
+    }
+
+    private static void MapRestrictedKeyCreation(RouteGroupBuilder keys)
+    {
+        keys.MapPost("/restricted", async (CreateRestrictedPersonalKeyRequest request, HttpContext http, PulseDbContext db, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (InputRules.Text(request.Name, 200, "name", out var name, required: true) is { } badName) return badName;
+            if (request.ProjectIds is not { Count: >= 1 and <= 20 } || request.ProjectIds.Contains(Guid.Empty))
+                return InputRules.Problem("projectIds", "Supply 1–20 nonempty project IDs.");
+            if (request.Scopes is not { Count: >= 1 and <= 4 } || request.Scopes.Any(s => s is null || !RestrictedToken.KnownScopes.Contains(s, StringComparer.Ordinal)))
+                return InputRules.Problem("scopes", "Choose 1–4 named scopes: analytics:read, configuration:read, configuration:write, exports:write.");
+            var now = clock.GetUtcNow();
+            if (request.ExpiresAt is not { } expires || expires < now.AddMinutes(1) || expires > now.AddDays(90))
+                return InputRules.Problem("expiresAt", "Expiry must be 1 minute to 90 days ahead.");
+            var projects = request.ProjectIds.Distinct().ToArray(); var scopes = request.Scopes.Distinct(StringComparer.Ordinal).ToArray();
+            var userId = ProjectAccessService.GetUserId(http.User)!.Value;
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            if (await db.ProjectMemberships.CountAsync(m => m.UserId == userId && projects.Contains(m.ProjectId), ct) != projects.Length)
+                return Results.NotFound();
+            var plaintext = ApiKeyGenerator.NewPersonalKey();
+            var key = new PersonalApiKey { UserId = userId, Name = name!, KeyHash = ApiKeyGenerator.Sha256(plaintext), KeySuffix = plaintext[^4..],
+                Mode = PersonalKeyMode.Restricted, CreatedAt = now, ExpiresAt = expires };
+            db.PersonalApiKeys.Add(key);
+            db.PersonalKeyProjects.AddRange(projects.Select(id => new PersonalKeyProject { KeyId = key.Id, ProjectId = id }));
+            db.PersonalKeyScopes.AddRange(scopes.Select(scope => new PersonalKeyScope { KeyId = key.Id, Scope = scope }));
+            await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct);
+            http.Response.Headers.CacheControl = "no-store";
+            return Results.Created($"/api/personal-api-keys/{key.Id}", new PersonalApiKeyCreatedResponse(key.Id, key.Name, plaintext, key.CreatedAt,
+                "restricted", expires, projects, scopes));
+        });
     }
 
     private static AuthResponse ToAuthResponse(User user, JwtTokenIssuer tokens)

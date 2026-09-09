@@ -2,6 +2,11 @@ using System.Text.Json;
 
 namespace Pulse.Api.Contracts;
 
+public record DuplicateDashboardRequest(string? Name);
+public record TileLayoutInput(Guid TileId, JsonElement? Layout);
+public record BatchTileLayoutsRequest(List<TileLayoutInput?>? Tiles);
+public record SelectedTileRefreshRequest(List<Guid>? TileIds);
+
 public record CreateDashboardRequest(string? Name, string? Description);
 
 public record UpdateDashboardRequest(string? Name, string? Description);
