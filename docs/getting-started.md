@@ -5,6 +5,15 @@ curl. Full endpoint details live in the [API reference](api-reference.md).
 
 ## Prerequisites
 
+New to backend development? Start with the [learning path](learning/README.md).
+For a native PowerShell walkthrough, start the API and run
+`./scripts/learning-demo.ps1` from the repository root. The curl examples
+below use Bash syntax.
+
+If Windows blocks local script execution, use
+`powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/learning-demo.ps1`;
+the override applies only to that process.
+
 - .NET 10 SDK
 - `curl` (examples below); `jq` is handy but optional
 
@@ -12,12 +21,17 @@ curl. Full endpoint details live in the [API reference](api-reference.md).
 
 ```bash
 dotnet build
-dotnet test                                    # 291 tests, all green
+dotnet test                                    # run the current suite
+dotnet src/Pulse.Api/bin/Debug/net10.0/Pulse.Api.dll db upgrade --database src/Pulse.Api/pulse.db
 dotnet run --project src/Pulse.Api            # http://localhost:5141 (launchSettings)
 ```
 
-The API creates its SQLite database (`pulse.db`) on first start. Delete the
-file to reset. Configuration knobs: `ConnectionStrings__Pulse`, `Jwt:Secret`
+The explicit upgrade command creates a fresh database. Ordinary API startup
+verifies its schema and fails if adoption or upgrade is required. For an existing
+database, follow the [database upgrade runbook](runbooks/database-upgrades.md)
+before running maintenance; preserve its data and backup. The default file for
+`dotnet run --project src/Pulse.Api` is `src/Pulse.Api/pulse.db` relative to the
+repository root. Configuration knobs: `ConnectionStrings__Pulse`, `Jwt:Secret`
 (preconfigured for Development), `Jwt:LifetimeMinutes` (default 480),
 `RateLimiting:Capture:PermitLimit`/`WindowSeconds` (default 300/60).
 
@@ -60,8 +74,9 @@ WRITE_KEY=<apiKey from above>
 ## Capture events
 
 Capture is asynchronous: the endpoint validates the shape, queues the events
-durably and returns **202**; a background worker persists them within
-milliseconds (watch `GET /api/ingestion/metrics` → `pending: 0`).
+durably and returns **202**. A background worker later processes them. Check
+project ingestion metrics until pending reaches zero, then verify dead letters
+and the expected query result; an empty queue alone does not prove success.
 
 ```bash
 # Anonymous browsing, then signup + $identify, then a purchase.

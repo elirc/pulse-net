@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AstraDocs — one event, one step at a time</title>
+  <style>
+    :root { color-scheme: light; --ink:#163330; --muted:#526763; --paper:#f4f6f1; --line:#c5d3c9; --accent:#126954; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.65 system-ui,sans-serif; }
+    a { color:#075d8c; text-underline-offset:3px; }
+    button,select { font:inherit; }
+    button { cursor:pointer; }
+    :focus-visible { outline:3px solid #ad5200; outline-offset:4px; }
+    .skip { position:absolute; left:16px; top:-100px; background:white; padding:12px; z-index:2; }
+    .skip:focus { top:12px; }
+    header,main,footer { max-width:1120px; margin:auto; padding:24px; }
+    header { padding-top:48px; }
+    .eyebrow { font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:750; }
+    h1 { font-size:clamp(2rem,5vw,3.8rem); line-height:1.1; max-width:800px; margin:14px 0 20px; }
+    h2 { line-height:1.3; font-size:1.6rem; margin:0 0 12px; }
+    h3 { font-size:1rem; margin:0 0 10px; }
+    p { max-width:74ch; }
+    .muted { color:var(--muted); }
+    .intro { font-size:1.12rem; }
+    .layout { display:grid; grid-template-columns:230px minmax(0,1fr); gap:28px; align-items:start; }
+    .panel { border:1px solid var(--line); background:#fff; border-radius:16px; padding:26px; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:20px; }
+    select { max-width:100%; padding:8px; background:white; color:var(--ink); border:1px solid var(--line); border-radius:8px; }
+    nav ol { padding:0; list-style:none; margin:12px 0; }
+    nav button { width:100%; text-align:left; padding:11px 12px; border:1px solid transparent; border-radius:8px; background:transparent; color:var(--ink); }
+    nav button[aria-current="step"] { border-color:var(--accent); background:#e0eee6; font-weight:700; }
+    .perspectives { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0; }
+    .perspectives button,.navigation button,#check,#restart,#toggle-quiz { border:1px solid var(--accent); border-radius:8px; background:white; color:var(--accent); padding:9px 15px; }
+    .perspectives button[aria-pressed="true"],#next,#check { background:var(--accent); color:white; }
+    button:disabled { opacity:.45; cursor:default; }
+    #perspective-text { min-height:90px; }
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#eef3ef; padding:18px; border-radius:10px; font:14px/1.6 ui-monospace,monospace; }
+    .snapshot { overflow-x:auto; margin:24px 0; }
+    table { width:100%; border-collapse:collapse; font-size:.95rem; }
+    caption { text-align:left; font-weight:700; margin-bottom:8px; }
+    th,td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); }
+    .anchor { border-left:4px solid var(--accent); padding:12px 16px; background:#edf5ee; }
+    .navigation { display:flex; justify-content:space-between; gap:12px; margin-top:24px; }
+    progress { width:100%; height:9px; accent-color:var(--accent); }
+    fieldset { margin:26px 0 0; padding:18px; border:1px solid var(--line); border-radius:10px; }
+    legend { font-weight:700; padding:0 6px; }
+    .choice { display:flex; gap:10px; padding:8px 0; align-items:baseline; }
+    input[type="radio"] { accent-color:var(--accent); flex-shrink:0; }
+    #feedback { margin-bottom:0; min-height:2em; }
+    .links { display:flex; gap:20px; flex-wrap:wrap; }
+    footer { font-size:.9rem; padding-bottom:40px; }
+    @media(max-width:760px) { .layout { grid-template-columns:1fr; } header,main,footer { padding:20px; } nav ol { display:grid; grid-template-columns:1fr 1fr; } .panel { padding:20px; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#lesson">Skip to the current step</a>
+  <header>
+    <div class="eyebrow">AstraDocs / Pulse onboarding</div>
+    <h1>One event.<br>One step at a time.</h1>
+    <p class="intro">Follow a shop visitor's pageview through the backend. Read each step as a story, as code, or as data. Switch views whenever another explanation would help.</p>
+    <div class="links"><a href="README.md">Reading guide</a><a href="17-desk-reference.md">Desk reference</a><a href="15-recall-cards.md">Recall cards</a></div>
+    <p class="muted">This is an offline teaching model. It sends no requests and changes no project data. Markdown guides open best in your editor's preview.</p>
+  </header>
+  <main>
+    <noscript><p class="panel">The step controls need JavaScript. You can read the same journey in <a href="04-one-event-story.md">the event story</a> and <a href="05-data-shapes.md">the data-shapes guide</a>.</p></noscript>
+    <div class="controls">
+      <label for="scenario"><strong>Follow a scenario:</strong></label>
+      <select id="scenario">
+        <option value="success">A valid event is processed</option>
+        <option value="failure">The stored envelope becomes unreadable</option>
+      </select>
+      <button id="restart" type="button">Start over</button>
+    </div>
+    <details class="panel" id="glossary">
+      <summary>Three terms you can revisit anytime</summary>
+      <dl>
+        <dt><strong>Project</strong></dt><dd>A workspace for one product's analytics. Its ID scopes events, people, and configuration so another project's records stay separate.</dd>
+        <dt><strong>Person</strong></dt><dd>An analytics identity, such as the visitor who generated events. One person can have several distinct IDs. A person is different from the account you use to manage Pulse.</dd>
+        <dt><strong>QueuedEvent</strong></dt><dd>A durable row holding accepted work until the worker processes it. Queued does not yet mean a processed AnalyticsEvent exists.</dd>
+      </dl>
+      <p><a href="08-people-and-tables.md">Revisit the tables</a> or <a href="04-one-event-story.md">follow one event as a story</a>.</p>
+    </details>
+    <p id="scenario-note" class="muted"></p>
+    <div class="layout">
+      <nav aria-label="Event journey steps">
+        <h2>The journey</h2>
+        <ol id="steps"></ol>
+        <p class="muted">Choose any step. Nothing is timed or scored.</p>
+      </nav>
+      <article id="lesson" class="panel" aria-labelledby="step-title">
+        <p id="position" class="eyebrow"></p>
+        <progress id="progress" max="8" value="1" aria-label="Position in the walkthrough"></progress>
+        <h2 id="step-title" tabindex="-1"></h2>
+        <div class="perspectives" role="group" aria-label="Choose an explanation style">
+          <button type="button" data-view="story" aria-pressed="true">Tell me the story</button>
+          <button type="button" data-view="code" aria-pressed="false">Show me the code</button>
+          <button type="button" data-view="data" aria-pressed="false">Describe the data</button>
+        </div>
+        <section aria-live="polite" aria-atomic="true">
+          <p id="perspective-text"></p>
+          <pre id="code-panel" hidden><code id="code-text"></code></pre>
+        </section>
+        <div class="snapshot">
+          <table>
+            <caption>Committed records in this illustrative one-event project</caption>
+            <thead><tr><th scope="col">Pending queue rows</th><th scope="col">Stored events</th><th scope="col">Persons</th><th scope="col">Dead letters</th></tr></thead>
+            <tbody><tr id="counts"><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody>
+          </table>
+        </div>
+        <p class="muted">We pause between operations to make state visible. Real requests and workers can overlap. Uncommitted transaction work is excluded from this table.</p>
+        <p id="anchor" class="anchor"></p>
+        <p id="source"></p>
+        <button id="toggle-quiz" type="button" aria-expanded="false" aria-controls="quiz">Show practice question</button>
+        <fieldset id="quiz" hidden>
+          <legend>Try one question</legend>
+          <p id="question"></p>
+          <div id="choices"></div>
+          <button id="check" type="button">Check my reasoning</button>
+          <p id="feedback" role="status"></p>
+        </fieldset>
+        <div class="navigation">
+          <button id="previous" type="button">Previous step</button>
+          <button id="next" type="button">Next step</button>
+        </div>
+      </article>
+    </div>
+  </main>
+  <footer>
+    <p>Keep returning to this sentence: <strong>capture queues; workers process; queries read processed events.</strong></p>
+    <p>The implementation's earlier <a href="../docs/learning/validation.md">validation limits</a> remain documented separately. This teaching model does not execute or verify the API.</p>
+  </footer>
+  <script>
+    'use strict';
+    const lessons = [
+      {
+        title:'The shop sends a pageview',
+        story:'A visitor opens the pricing page in Mara’s shop. The shop prepares one pageview event for device-7. Mara is the management User; the visitor will be represented as a tracked Person.',
+        code:'CaptureRequest describes the HTTP input. This is an illustrative request body; a real local project key is required.',
+        snippet:'POST /capture\n{ "api_key": "<local project write key>",\n  "event": "pageview", "distinct_id": "device-7",\n  "properties": { "page": "/pricing" } }',
+        data:'No records have been saved yet. The event name describes an action; the distinct ID labels the tracked visitor. The page property describes this occurrence.',
+        counts:[0,0,0,0], anchor:'A User operates Pulse. A Person represents tracked product activity.',
+        source:'../src/Pulse.Api/Contracts/CaptureContracts.cs', file:'CaptureContracts.cs',
+        question:'Who is the management User in this example?', choices:['Mara, who operates the analytics project','The pageview event','The queue row'], answer:0,
+        explanation:'Mara is the operator. The visitor’s tracked activity belongs to a Person, and the event records an action.'
+      },
+      {
+        title:'Check the project and input',
+        story:'The endpoint uses the write key to find the project. It checks the required event name and distinct ID before accepting the work.',
+        code:'These selected lines find the project and unwrap the request. The surrounding endpoint also returns errors when the project or input is invalid.',
+        snippet:'var project = await capture.FindProjectByApiKeyAsync(apiKey, ct);\nvar (events, errors) = Unwrap(request);',
+        data:'The request has become prepared IncomingEvent data in memory. No queue insert has been saved at this step.',
+        counts:[0,0,0,0], anchor:'A project groups the data. Input checks happen before queue insertion.',
+        source:'../src/Pulse.Api/Endpoints/CaptureEndpoints.cs', file:'CaptureEndpoints.cs',
+        question:'What does this step establish?', choices:['The final trend count','A recognized project and acceptable basic input','That no later failure is possible'], answer:1,
+        explanation:'Basic input validation does not guarantee the background processing path will succeed.'
+      },
+      {
+        title:'Save the pending work',
+        story:'The endpoint writes a pending work item into the database. Picture an entry in a work ledger that is kept after the app restarts.',
+        code:'Selected source: Add tracks the new entity; SaveChangesAsync writes it. The payload contains the internal event envelope.',
+        snippet:'db.QueuedEvents.Add(new QueuedEvent\n{\n    ProjectId = project.Id,\n    PayloadJson = JsonSerializer.Serialize(incoming),\n});\nawait db.SaveChangesAsync(ct);',
+        data:'There is now one committed QueuedEvent. There is still no processed AnalyticsEvent in this paused example.',
+        counts:[1,0,0,0], anchor:'A queue row means pending work, not a completed analytics event.',
+        source:'../src/Pulse.Api/Endpoints/CaptureEndpoints.cs', file:'CaptureEndpoints.cs',
+        question:'Where is the durable pending payload?', choices:['Only in the browser','Only in the signal channel','In the QueuedEvents database table'], answer:2,
+        explanation:'The database holds the work. The channel only carries a wake-up notification.'
+      },
+      {
+        title:'Ring the bell and return 202',
+        story:'The endpoint signals that work is available and returns Accepted. The worker can now run independently of this request’s response.',
+        code:'These lines follow the save. CaptureResponse reports queued work; it is not a trend result.',
+        snippet:'signal.Ring();\nreturn Results.Accepted(\n    value: new CaptureResponse("queued", events.Count));',
+        data:'For this paused walkthrough the queue still contains one row. In a live app the worker might finish before you inspect the HTTP response.',
+        counts:[1,0,0,0], anchor:'202 promises acceptance. It does not promise successful processing.',
+        source:'../src/Pulse.Api/Endpoints/CaptureEndpoints.cs', file:'CaptureEndpoints.cs',
+        question:'Does 202 guarantee the event is already queryable?', choices:['No; processing has a separate outcome','Yes; all work is complete','Yes; a Person is always already saved'], answer:0,
+        explanation:'The durable queue write happened. The worker’s later result must be checked separately.'
+      },
+      {
+        title:'The worker reads the queue',
+        story:'A background worker wakes on the bell or a periodic sweep. It creates a scope and asks the processor to attempt queued work.',
+        code:'Selected processor query: read up to a batch in sequence order. Reading the work does not yet remove it.',
+        snippet:'var batch = await _db.QueuedEvents\n    .AsNoTracking()\n    .OrderBy(q => q.Seq)\n    .Take(BatchSize)\n    .ToListAsync(ct);',
+        data:'The pending row is still in the database. The processor also has an in-memory representation to inspect and process.',
+        counts:[1,0,0,0], anchor:'The signal is a bell. Periodic sweeps can find committed work after a missed ring.',
+        source:'../src/Pulse.Infrastructure/Services/IngestionPipeline.cs', file:'IngestionPipeline.cs',
+        question:'What if the signal was missed after the queue save?', choices:['The saved row is erased','The worker can find it during a periodic sweep','The HTTP client must repair the database'], answer:1,
+        explanation:'Queue rows are the source of truth. The signal makes discovery quicker; it is not the event storage.'
+      },
+      {
+        title:'Resolve the person and write the event',
+        story:'The processor validates the stored envelope. CaptureService resolves device-7 to a Person, prepares the event, and updates definitions inside a transaction.',
+        code:'Selected call from the processor. The called method includes event persistence and queue acknowledgement within its transaction.',
+        snippet:'await _capture.IngestQueuedAsync(project, incoming, row.Seq, ct);',
+        data:'Imagine pausing inside that transaction before commit. Work has been prepared, but this committed-state table still shows the earlier queue row. No completed change is being claimed yet.',
+        counts:[1,0,0,0], anchor:'Related writes must finish together. Prepared work is not the same as a committed outcome.',
+        source:'../src/Pulse.Infrastructure/Services/CaptureService.cs', file:'CaptureService.cs',
+        question:'What should happen if queue acknowledgement fails before commit?', choices:['Keep the event and silently forget the failure','Pretend the query succeeded','Roll back the related event writes and retain the queue row'], answer:2,
+        explanation:'The transaction ties the event, related changes, and queue removal together.'
+      },
+      {
+        title:'Commit and acknowledge together',
+        story:'The transaction commits. There is one processed event and one resolved person. The handled queue row is gone.',
+        code:'The persistence path saves changes, deletes the matching queue row, verifies removal, and commits the transaction. Open the source to see the full boundary.',
+        snippet:'await _db.SaveChangesAsync(ct);\n// Delete this queue row and require one removal.\nawait transaction.CommitAsync(ct);',
+        data:'The committed state is queue 0, events 1, persons 1, dead letters 0. These counts describe this fresh example project only.',
+        counts:[0,1,1,0], anchor:'A handled queue row and its event changes commit as one operation.',
+        source:'../src/Pulse.Infrastructure/Services/CaptureService.cs', file:'CaptureService.cs',
+        question:'Does this deduplicate a second separately accepted capture request?', choices:['Yes, because every transaction removes every duplicate','No; client-request idempotency needs a separate design','Yes, because the event names match'], answer:1,
+        explanation:'Two capture requests can create two independent queue rows. Atomic acknowledgement addresses a different failure window.'
+      },
+      {
+        title:'Query the processed activity',
+        story:'Mara asks for a pageview trend covering this event’s UTC day. The query reads processed events and calculates a count and unique-person count.',
+        code:'An illustrative query, assuming this event’s timestamp falls inside the requested range and the caller has read access.',
+        snippet:'GET /api/projects/<projectId>/insights/trend\n    ?event=pageview&interval=day&from=<rangeStart>&to=<rangeEnd>\n\nMatching bucket: count = 1, uniquePersons = 1',
+        data:'Querying does not consume the stored event. Its matching bucket counts one occurrence by one resolved person.',
+        counts:[0,1,1,0], anchor:'Capture queues. Workers process. Queries read processed events.',
+        source:'../src/Pulse.Infrastructure/Services/QueryService.cs', file:'QueryService.cs',
+        question:'Add another matching event by the same person in the same bucket. What changes?', choices:['Count becomes 2; uniquePersons stays 1','Both counts must become 2','Both counts stay 1'], answer:0,
+        explanation:'Event count measures occurrences. Unique persons measures distinct resolved people among matching events.'
+      }
+    ];
+    const failureSteps = {
+      5: {
+        title:'The stored envelope fails validation',
+        story:'For this failure exercise, imagine a bug or storage-editing mistake corrupted the envelope after acceptance. The processor cannot deserialize it. The HTTP route normally rejects malformed request JSON earlier.',
+        code:'Selected deserialization failure path. A null incoming event is then classified as permanent invalid input by the processor.',
+        snippet:'try\n{\n    incoming = JsonSerializer.Deserialize<IncomingEvent>(row.PayloadJson);\n}\ncatch (JsonException)\n{\n    incoming = null;\n}',
+        data:'The invalid queued row still exists before the failure record is committed. No Person or AnalyticsEvent was created by this unreadable envelope.',
+        counts:[1,0,0,0], anchor:'Not all accepted work can be processed successfully.',
+        source:'../src/Pulse.Infrastructure/Services/IngestionPipeline.cs', file:'IngestionPipeline.cs',
+        question:'Would immediately retrying the same unreadable envelope repair its bytes?', choices:['No; the malformed stored data needs investigation','Yes; retries always repair JSON','Yes; a trend query rewrites it'], answer:0,
+        explanation:'This deterministic validation failure is dead-lettered. Temporary dependency failures are a different case.'
+      },
+      6: {
+        title:'Commit the dead-letter move',
+        story:'The processor records the failure in dead-letter storage and removes the queue row in one transaction. The evidence remains available for inspection.',
+        code:'The processor delegates this move to a method that inserts the failure, removes the queue row, and commits both together.',
+        snippet:'await MoveToDeadLetterAsync(row, error!, ct);',
+        data:'The committed state is queue 0, events 0, persons 0, dead letters 1. An empty queue can therefore accompany failed processing.',
+        counts:[0,0,0,1], anchor:'Empty queue does not mean every event succeeded.',
+        source:'../src/Pulse.Infrastructure/Services/IngestionPipeline.cs', file:'IngestionPipeline.cs',
+        question:'Which evidence explains this empty queue without an event?', choices:['A guaranteed successful write','A dead-letter record','An extra management User'], answer:1,
+        explanation:'The row left pending storage because processing failed, not because a normal event was produced.'
+      },
+      7: {
+        title:'Query and investigate the missing activity',
+        story:'Mara sees zero matching events in this fresh project. She checks the dead letters as well as the queue and query parameters.',
+        code:'Inspect project-scoped metrics and failure records with a member token. Invalid stored payloads are rejected by replay with 422 and retained.',
+        snippet:'GET /api/projects/<projectId>/ingestion/metrics\nGET /api/projects/<projectId>/ingestion/dead-letters\n\nMatching trend bucket: count = 0, uniquePersons = 0',
+        data:'The failed event is not counted by the trend. The malformed letter remains evidence; replay does not edit or automatically repair its payload.',
+        counts:[0,0,0,1], anchor:'Check pending work, failure evidence, and the query inputs before changing query math.',
+        source:'../src/Pulse.Infrastructure/Services/IngestionOperationsService.cs', file:'IngestionOperationsService.cs',
+        question:'What is a useful next step?', choices:['Keep replaying unreadable bytes indefinitely','Assume every zero count is a query bug','Inspect the failure and repair its cause before considering recovery'], answer:2,
+        explanation:'Recovery starts with diagnosis. This replay endpoint preserves unsuitable stored payloads and reports 422.'
+      }
+    };
+    let step = 0;
+    let view = 'story';
+    const byId = id => document.getElementById(id);
+    const current = () => byId('scenario').value === 'failure' && failureSteps[step] ? failureSteps[step] : lessons[step];
+    const stepButtons = lessons.map((lesson, index) => {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.addEventListener('click', () => go(index));
+      item.append(button);
+      byId('steps').append(item);
+      return button;
+    });
+    function renderPerspective() {
+      const lesson = current();
+      byId('perspective-text').textContent = lesson[view];
+      byId('code-panel').hidden = view !== 'code';
+      byId('code-text').textContent = lesson.snippet;
+      document.querySelectorAll('[data-view]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.view === view));
+      });
+    }
+    function render() {
+      setQuizVisible(false);
+      const lesson = current();
+      const isFailure = byId('scenario').value === 'failure';
+      byId('scenario-note').textContent = isFailure
+        ? 'Failure scenario: the HTTP input is valid, then the stored envelope is corrupted before processing. The branch changes at step 6.'
+        : 'Success scenario: a fresh project, one valid pageview, and no processing failures. Use the other scenario to see why an empty queue can be misleading.';
+      stepButtons.forEach((button, index) => {
+        const item = isFailure && failureSteps[index] ? failureSteps[index] : lessons[index];
+        button.textContent = `${index + 1}. ${item.title}`;
+        if (index === step) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+      });
+      byId('position').textContent = `Step ${step + 1} of ${lessons.length}`;
+      byId('progress').value = step + 1;
+      byId('step-title').textContent = lesson.title;
+      renderPerspective();
+      Array.from(byId('counts').children).forEach((cell, index) => { cell.textContent = lesson.counts[index]; });
+      byId('anchor').textContent = lesson.anchor;
+      const link = document.createElement('a');
+      link.href = lesson.source;
+      link.textContent = `Find this in ${lesson.file}`;
+      byId('source').replaceChildren(link);
+      byId('question').textContent = lesson.question;
+      byId('choices').replaceChildren();
+      lesson.choices.forEach((choice, index) => {
+        const label = document.createElement('label');
+        label.className = 'choice';
+        const radio = document.createElement('input');
+        radio.type = 'radio'; radio.name = 'answer'; radio.value = index;
+        radio.addEventListener('change', () => { byId('feedback').textContent = ''; });
+        label.append(radio, document.createTextNode(choice));
+        byId('choices').append(label);
+      });
+      byId('feedback').textContent = '';
+      byId('previous').disabled = step === 0;
+      byId('next').disabled = step === lessons.length - 1;
+    }
+    function go(index) {
+      step = Math.max(0, Math.min(lessons.length - 1, index));
+      render();
+      byId('step-title').focus();
+    }
+    function setQuizVisible(visible) {
+      byId('quiz').hidden = !visible;
+      byId('toggle-quiz').setAttribute('aria-expanded', String(visible));
+      byId('toggle-quiz').textContent = visible ? 'Hide practice question' : 'Show practice question';
+      if (!visible) {
+        document.querySelectorAll('input[name="answer"]').forEach(input => { input.checked = false; });
+        byId('feedback').textContent = '';
+      }
+    }
+    byId('toggle-quiz').addEventListener('click', () => setQuizVisible(byId('quiz').hidden));
+    byId('restart').addEventListener('click', () => {
+      byId('scenario').value = 'success';
+      view = 'story';
+      go(0);
+    });
+    document.querySelectorAll('[data-view]').forEach(button => {
+      button.addEventListener('click', () => { view = button.dataset.view; renderPerspective(); });
+    });
+    byId('previous').addEventListener('click', () => go(step - 1));
+    byId('next').addEventListener('click', () => go(step + 1));
+    byId('scenario').addEventListener('change', () => { render(); });
+    byId('check').addEventListener('click', () => {
+      const selected = document.querySelector('input[name="answer"]:checked');
+      if (!selected) { byId('feedback').textContent = 'Choose an answer first. Take as much time as you need.'; return; }
+      const lesson = current();
+      byId('feedback').textContent = (Number(selected.value) === lesson.answer ? 'That fits the code. ' : 'Revisit this idea: ') + lesson.explanation;
+    });
+    render();
+  </script>
+</body>
+</html>

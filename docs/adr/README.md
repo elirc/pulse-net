@@ -13,3 +13,5 @@ made. Each captures the context at the time, the decision, and what it costs.
 | [0006](0006-utc-ticks-datetimeoffset-converter.md) | `DateTimeOffset` is stored as UTC ticks |
 | [0007](0007-cursor-pagination-for-exports.md) | Exports paginate with `(timestamp, id)` cursors, not limit/offset |
 | [0008](0008-sql-slice-in-memory-query-engine.md) | Queries filter in SQL, evaluate in memory |
+| [0009](0009-atomic-ingestion-and-replay.md) | Commit ingestion effects and queue acknowledgement together; atomically replay one dead letter |
+| [0010](0010-durable-ownership-and-fixed-export-input.md) | Fence worker mutations, persist retry/cancellation decisions, and copy bounded snapshot input |

@@ -27,7 +27,7 @@ retention) plus feature-flag evaluation, cohorts, dashboards and exports.
 Dependencies point strictly downward. `Pulse.Domain` has no package
 references at all, so everything hash-, filter-, bucket- and merge-related is
 unit-testable without a database. `Pulse.Infrastructure` owns persistence and
-orchestration; `Pulse.Api` owns HTTP shapes, status codes and the two hosted
+orchestration; `Pulse.Api` owns HTTP shapes, status codes and the hosted
 workers. Tests (`tests/Pulse.Tests`) cover all three layers, mostly through
 the HTTP surface.
 
@@ -41,35 +41,46 @@ POST /capture ──► validate shape ──► QueuedEvents table ──► 20
                               IngestionSignal.Ring │ 1s safety sweep
                                           ▼        │
                                    IngestionWorker (BackgroundService)
-                                          │  batches of 200, Seq order
+                                           │  up to 200 attempts; 50 per project lease
                                           ▼
                                    IngestionProcessor
                                      │ deserialize + re-validate
-                                     │ CaptureService.IngestAsync
+                                     │ CaptureService.IngestQueuedAsync
                                      │   (person resolution, $identify,
                                      │    $set/$set_once, definitions,
-                                     │    one transaction per row)
+                                     │    queue acknowledgement in one transaction)
                                      ▼
                           Events / Persons / Definitions tables
                                      │ permanent failure → DeadLetterEvents
-                                     │ transient failure → retry ≤ 3
+                                      │ SQLite contention → 1/2/4/8s backoff, then dead letter
 ```
 
 Key decisions (see the [ADRs](adr/) for rationale):
 
 - **Durable queue table, not an in-memory channel.** The `QueuedEvents` table
   (keyed by an auto-increment `Seq`) is the source of truth. A crash after
-  202 loses nothing; enqueue order — which matters for `$identify` and
-  `$set` — is the processing order.
+  202 leaves committed work available after restart. Rows are attempted in
+  enqueue order, but later rows can overtake a transiently failing row.
+  Strict per-identity ordering under retry is not currently guaranteed.
+- **Atomic acknowledgement.** Event, identity, and definition writes commit
+  together with queue deletion. Dead-letter creation also commits with queue
+  deletion. See [ADR 0009](adr/0009-atomic-ingestion-and-replay.md) and the
+  [worked example](learning/worked-example-ingestion.md). This closes the
+  split-commit failure window. Optional client event IDs add a separate seven-day
+  admission deduplication guarantee; project owner/generation leases fence every
+  worker mutation. Receipts join processing outcomes to their actual event IDs.
+- **Project operations.** Member-only metrics show queue count and oldest
+   age and durable retry timing. An Editor or Admin can replay a valid dead letter through an atomic move back
+  to the queue. Replay consumes the letter and places the event at the tail.
 - **The channel is only a doorbell.** `IngestionSignal` wraps a bounded
   `Channel<bool>` of capacity 1 with `DropWrite`: `Ring()` after enqueue wakes
   the worker immediately, and a missed signal only delays work until the
   worker's 1-second periodic sweep. No data rides the channel.
 - **Poison classification.** Rows that can never succeed (unparseable JSON,
   failed re-validation, project no longer exists) dead-letter immediately.
-  Anything else (an exception inside the capture pipeline) is treated as
-  transient and retried up to `IngestionProcessor.MaxAttempts` (3) before
-  dead-lettering with the attempt count and final error. Dead letters are
+  Only concrete SQLite BUSY/LOCKED errors receive durable 1/2/4/8-second delays;
+  the fifth failed attempt dead-letters. Cancellation and unclassified errors
+  do not consume attempts. The failed-attempt count and safe reason remain inspectable. Dead letters are
   inspectable per project at `GET /api/projects/{id}/ingestion/dead-letters`.
 - **Change-tracker hygiene.** A failed ingest can leave half-tracked entities
   in the shared `DbContext`; the processor calls `ChangeTracker.Clear()` so a
@@ -84,6 +95,10 @@ reuses the same signal-plus-sweep pattern for async export jobs: `POST
 /api/projects/{id}/exports` inserts a `Pending` job row and returns 202; the
 worker pages through data (50,000-row cap), renders CSV/JSON, and stores the
 finished document on the job row for download.
+Owner/generation leases and heartbeats allow recovery of abandoned Running jobs;
+conditional publication rejects stale attempts. Cancellation is durable. Event
+jobs may opt into a bounded snapshot that copies complete export values before
+rendering, so recovery uses the same input. See [recoverable exports](runbooks/exports.md).
 
 ## Identity model
 
@@ -109,10 +124,11 @@ Rules (PostHog semantics, implemented in `IdentityService` +
 3. `properties.$set` overwrites person properties; `$set_once` fills only
    keys that are absent. Within one event `$set` applies first.
 
-Because identity depends on order, resolution reads consult the EF change
-tracker (`.Local`) before the database — events earlier in the same batch
-(not yet flushed) are visible to later ones — and the queue guarantees
-cross-batch ordering.
+Identity resolution consults the EF change tracker (`.Local`) as well as the
+database so changes already made in the current context remain visible. Each
+queued event commits its identity changes with acknowledgement. Eligible rows
+are processed in sequence order within a project lease, but a delayed retry can
+be overtaken; the queue does not promise strict identity ordering across retries.
 
 ## Query engine
 
@@ -146,6 +162,17 @@ cohorts re-evaluate their rules (person-property filters and "performed X in
 the last N days") against live data on every use — there is no materialized
 membership to go stale.
 
+`BoundedQueryService` offers a separate trend contract with explicit row, property
+byte, bucket, annotation, and time budgets. It rejects an over-budget request
+instead of reporting a partial aggregate. `PersonSessionService` groups bounded
+canonical-person activity using a caller-selected inactivity gap and half-open
+time range. Their smaller input contracts leave legacy analytics behavior intact.
+
+Hourly alerts persist the rule revision, completed hourly evaluation, optional
+notification, and per-user read state separately. Evaluation and progress commit
+together. A ten-window cycle limit and 24-hour catch-up watermark bound scheduling;
+late arrivals do not reopen an evaluated window. See [hourly alerts](runbooks/hourly-alerts.md).
+
 ## Feature flags
 
 `FeatureFlagHasher.Rank` hashes `"{flagKey}.{distinctId}"` with SHA-256 and
@@ -175,9 +202,10 @@ cursor comparisons consistent with column comparisons.
 - **Auth:** a policy scheme dispatches `Authorization: Bearer …` on prefix —
   `pk_user_` keys go to a custom handler (SHA-256 hash lookup), everything
   else to JWT bearer validation. Project-scoped authorization lives in
-  `ProjectAccessService`: membership for management, membership *or* the
-  project read key (`X-Api-Key`) for query endpoints, and non-members always
-  get 404 so project ids don't leak.
+   `ProjectAccessService` and the central permission matrix: current project role
+   is combined with restricted-token project/scope/expiry limits. Only explicitly
+   allowed analytics routes accept a project read key. Non-members receive 404;
+   insufficient roles receive 403. Token management requires a JWT.
 - **Errors:** every failure path returns RFC 7807 problem details, including
   malformed request bodies (mapped from `BadHttpRequestException` to 400) and
   unhandled exceptions.
@@ -185,5 +213,14 @@ cursor comparisons consistent with column comparisons.
   (falling back to client IP), configurable via
   `RateLimiting:Capture:PermitLimit` / `WindowSeconds`, no queueing — SDKs
   back off on 429 and retry.
-- **Schema:** `EnsureCreated()` on startup, no migrations — simple by design
-  for a SQLite-backed reference implementation.
+- **Schema:** startup verifies the migration state. Offline `db status`,
+  `db adopt-legacy`, and `db upgrade` commands operate on an explicitly named
+  database; ordinary startup does not migrate it. See the
+  [upgrade runbook](runbooks/database-upgrades.md).
+- **Data lifecycle:** retention policies deploy disabled and use fixed-cutoff
+  bounded deletion batches. Person erasure pauses the project, revokes ingestion
+  authority, invalidates copied exports, deletes known identity data in resumable
+  phases, and retains versioned suppression fingerprints. Protected reads hold a
+  SQLite reserved writer lock through result assembly; guarded writes recheck the
+  maintenance generation. See [retention](runbooks/retention.md) and
+  [person erasure](runbooks/person-erasure.md) for recovery and limitations.

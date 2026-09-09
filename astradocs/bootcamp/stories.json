@@ -1,0 +1,1213 @@
+{
+  "scope": "All 75 stories; learning content is the primary deliverable",
+  "stories": [
+    {
+      "id": "US-01",
+      "title": "Choose the event name used by the learning demo",
+      "plan": "../18-junior-user-stories.md#us-01",
+      "status": "verified",
+      "implementation": [
+        "../../scripts/learning-demo.ps1"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Live demo on a fresh private database passed defaults (2 events), checkout & pay (1 event), and signup (5 events); each yielded one person. Four invalid-input cases rejected before HTTP. Evidence: tmp/final-demo-650bb97826fa41ceaa2b83799ac43cc1/evidence.json."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-02",
+      "title": "Choose how many events the demo sends",
+      "plan": "../18-junior-user-stories.md#us-02",
+      "status": "verified",
+      "implementation": [
+        "../../scripts/learning-demo.ps1"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Live demo on a fresh private database passed defaults (2 events), checkout & pay (1 event), and signup (5 events); each yielded one person. Four invalid-input cases rejected before HTTP. Evidence: tmp/final-demo-650bb97826fa41ceaa2b83799ac43cc1/evidence.json."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-03",
+      "title": "Print useful follow-up routes after the demo",
+      "plan": "../18-junior-user-stories.md#us-03",
+      "status": "verified",
+      "implementation": [
+        "../../scripts/learning-demo.ps1"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Live demo on a fresh private database passed defaults (2 events), checkout & pay (1 event), and signup (5 events); each yielded one person. Four invalid-input cases rejected before HTTP. Evidence: tmp/final-demo-650bb97826fa41ceaa2b83799ac43cc1/evidence.json."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-04",
+      "title": "Restart the visual walkthrough from the beginning",
+      "plan": "../18-junior-user-stories.md#us-04",
+      "status": "verified",
+      "implementation": [
+        "../index.html",
+        "../../scripts/verify-walkthrough.mjs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "scripts/verify-walkthrough.mjs passed all 12 browser assertions with exit 0, including invocation outside repository root and bounded isolated-browser teardown."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-05",
+      "title": "Show the lesson quiz only when the learner is ready",
+      "plan": "../18-junior-user-stories.md#us-05",
+      "status": "verified",
+      "implementation": [
+        "../index.html",
+        "../../scripts/verify-walkthrough.mjs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "scripts/verify-walkthrough.mjs passed all 12 browser assertions with exit 0, including invocation outside repository root and bounded isolated-browser teardown."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-06",
+      "title": "Explain three unfamiliar terms inside the visual lesson",
+      "plan": "../18-junior-user-stories.md#us-06",
+      "status": "verified",
+      "implementation": [
+        "../index.html",
+        "../../scripts/verify-walkthrough.mjs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "scripts/verify-walkthrough.mjs passed all 12 browser assertions with exit 0, including invocation outside repository root and bounded isolated-browser teardown."
+      ],
+      "lesson": "01-practice-tools.md"
+    },
+    {
+      "id": "US-07",
+      "title": "Reject project names longer than 200 characters",
+      "plan": "../18-junior-user-stories.md#us-07",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-08",
+      "title": "Rename an existing project",
+      "plan": "../18-junior-user-stories.md#us-08",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-09",
+      "title": "Filter the project list by a name fragment",
+      "plan": "../18-junior-user-stories.md#us-09",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-10",
+      "title": "Choose oldest-first or newest-first project ordering",
+      "plan": "../18-junior-user-stories.md#us-10",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-11",
+      "title": "Find project members by email fragment",
+      "plan": "../18-junior-user-stories.md#us-11",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-12",
+      "title": "Filter the people list by an exact distinct ID",
+      "plan": "../18-junior-user-stories.md#us-12",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-13",
+      "title": "Filter people by when their records were created",
+      "plan": "../18-junior-user-stories.md#us-13",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-14",
+      "title": "Return a project's total person count",
+      "plan": "../18-junior-user-stories.md#us-14",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-15",
+      "title": "Enforce a 2,000-character annotation limit consistently",
+      "plan": "../18-junior-user-stories.md#us-15",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-16",
+      "title": "Search annotation content for a phrase",
+      "plan": "../18-junior-user-stories.md#us-16",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-17",
+      "title": "Reject a reversed annotation date range",
+      "plan": "../18-junior-user-stories.md#us-17",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-18",
+      "title": "Find registered event names by prefix",
+      "plan": "../18-junior-user-stories.md#us-18",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-19",
+      "title": "Filter property definitions by their recorded JSON type",
+      "plan": "../18-junior-user-stories.md#us-19",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-20",
+      "title": "List only active or only inactive feature flags",
+      "plan": "../18-junior-user-stories.md#us-20",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-21",
+      "title": "Find feature flags by key prefix",
+      "plan": "../18-junior-user-stories.md#us-21",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-22",
+      "title": "Add offset pagination to dead-letter inspection",
+      "plan": "../18-junior-user-stories.md#us-22",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-23",
+      "title": "Filter dead letters by an error phrase",
+      "plan": "../18-junior-user-stories.md#us-23",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-24",
+      "title": "Fetch one dead letter by ID",
+      "plan": "../18-junior-user-stories.md#us-24",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "US-25",
+      "title": "Reject reversed date ranges in synchronous event export",
+      "plan": "../18-junior-user-stories.md#us-25",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints",
+        "../../tests/Pulse.Tests/Api/JuniorApiStoriesTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "02-scoped-queries.md"
+    },
+    {
+      "id": "MID-01",
+      "title": "Duplicate a dashboard while sharing its insights",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-01",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/DashboardCompositionEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/DashboardCompositionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "04-dashboard-composition.md"
+    },
+    {
+      "id": "MID-02",
+      "title": "Move dashboards between projects with a template",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-02",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/DashboardTemplateService.cs",
+        "../../src/Pulse.Api/Endpoints/DashboardTemplateEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/DashboardTemplateTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "06-portable-templates.md"
+    },
+    {
+      "id": "MID-03",
+      "title": "Save several tile positions together",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-03",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/DashboardCompositionEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/DashboardCompositionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "04-dashboard-composition.md"
+    },
+    {
+      "id": "MID-04",
+      "title": "Refresh selected dashboard tiles",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-04",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/DashboardCompositionEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/DashboardCompositionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "04-dashboard-composition.md"
+    },
+    {
+      "id": "MID-05",
+      "title": "Preview an unsaved insight",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-05",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/InsightEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/InsightConfigValidator.cs",
+        "../../tests/Pulse.Tests/Api/InsightEditingTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "05-insight-lifecycle.md"
+    },
+    {
+      "id": "MID-06",
+      "title": "Edit a saved insight safely",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-06",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/InsightEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/InsightConfigValidator.cs",
+        "../../tests/Pulse.Tests/Api/InsightEditingTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "05-insight-lifecycle.md"
+    },
+    {
+      "id": "MID-07",
+      "title": "Find insight usages before deleting it",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-07",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/InsightEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/InsightConfigValidator.cs",
+        "../../tests/Pulse.Tests/Api/InsightEditingTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "05-insight-lifecycle.md"
+    },
+    {
+      "id": "MID-08",
+      "title": "Compare event counts across two periods",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-08",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/AnalyticsCompositionService.cs",
+        "../../src/Pulse.Api/Endpoints/AnalyticsCompositionEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/AnalyticsCompositionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "07-comparing-analytics.md"
+    },
+    {
+      "id": "MID-09",
+      "title": "Chart multiple event series in one request",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-09",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/AnalyticsCompositionService.cs",
+        "../../src/Pulse.Api/Endpoints/AnalyticsCompositionEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/AnalyticsCompositionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "07-comparing-analytics.md"
+    },
+    {
+      "id": "MID-10",
+      "title": "Browse one person's event timeline",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-10",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/PersonActivityEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/PersonActivityService.cs",
+        "../../src/Pulse.Infrastructure/Services/ScopedCursor.cs",
+        "../../tests/Pulse.Tests/Api/PersonActivityTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "09-person-activity.md"
+    },
+    {
+      "id": "MID-11",
+      "title": "View a person's activity summary",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-11",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/PersonActivityEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/PersonActivityService.cs",
+        "../../src/Pulse.Infrastructure/Services/ScopedCursor.cs",
+        "../../tests/Pulse.Tests/Api/PersonActivityTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "09-person-activity.md"
+    },
+    {
+      "id": "MID-12",
+      "title": "Preview a cohort before saving it",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-12",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CohortEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortEditingService.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortService.cs",
+        "../../tests/Pulse.Tests/Api/CohortEditingTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CohortEditingTransactionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "10-cohort-lifecycle.md"
+    },
+    {
+      "id": "MID-13",
+      "title": "Replace a dynamic cohort's rules",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-13",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CohortEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortEditingService.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortService.cs",
+        "../../tests/Pulse.Tests/Api/CohortEditingTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CohortEditingTransactionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "10-cohort-lifecycle.md"
+    },
+    {
+      "id": "MID-14",
+      "title": "Freeze a dynamic cohort into a static copy",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-14",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CohortEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortEditingService.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortService.cs",
+        "../../tests/Pulse.Tests/Api/CohortEditingTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CohortEditingTransactionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "10-cohort-lifecycle.md"
+    },
+    {
+      "id": "MID-15",
+      "title": "Replace a static cohort's member set",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-15",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CohortEditingEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortEditingService.cs",
+        "../../src/Pulse.Infrastructure/Services/CohortService.cs",
+        "../../tests/Pulse.Tests/Api/CohortEditingTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CohortEditingTransactionTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "10-cohort-lifecycle.md"
+    },
+    {
+      "id": "MID-16",
+      "title": "Explain a feature-flag decision",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-16",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/FlagDiagnosticEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/FeatureFlagService.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagDraftService.cs",
+        "../../tests/Pulse.Tests/Api/FlagExperienceTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagReadReuseTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagCloneConcurrencyTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "11-flag-decisions.md"
+    },
+    {
+      "id": "MID-17",
+      "title": "Preview flags for a small audience",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-17",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/FlagDiagnosticEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/FeatureFlagService.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagDraftService.cs",
+        "../../tests/Pulse.Tests/Api/FlagExperienceTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagReadReuseTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagCloneConcurrencyTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "11-flag-decisions.md"
+    },
+    {
+      "id": "MID-18",
+      "title": "Clone a flag as an inactive draft",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-18",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/FlagDiagnosticEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/FeatureFlagService.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagDraftService.cs",
+        "../../tests/Pulse.Tests/Api/FlagExperienceTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagReadReuseTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagCloneConcurrencyTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "11-flag-decisions.md"
+    },
+    {
+      "id": "MID-19",
+      "title": "Rotate a project's read key",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-19",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ProjectEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/ProjectReadKeyRotationTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "11-flag-decisions.md"
+    },
+    {
+      "id": "MID-20",
+      "title": "Validate a capture request without enqueueing it",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-20",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CaptureRequestParser.cs",
+        "../../src/Pulse.Api/Endpoints/CaptureEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/IngestionEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ReplayEnvelopeValidator.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/CaptureRecoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ReplayValidationTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "12-admission-and-recovery.md"
+    },
+    {
+      "id": "MID-21",
+      "title": "Explain whether a dead letter can be replayed",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-21",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CaptureRequestParser.cs",
+        "../../src/Pulse.Api/Endpoints/CaptureEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/IngestionEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ReplayEnvelopeValidator.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/CaptureRecoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ReplayValidationTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "12-admission-and-recovery.md"
+    },
+    {
+      "id": "MID-22",
+      "title": "Replay a selected batch of dead letters",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-22",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/CaptureRequestParser.cs",
+        "../../src/Pulse.Api/Endpoints/CaptureEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/IngestionEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ReplayEnvelopeValidator.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/CaptureRecoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ReplayValidationTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "12-admission-and-recovery.md"
+    },
+    {
+      "id": "MID-23",
+      "title": "Retry a failed export as a new job",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-23",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ExportHistoryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/ExportLifecycleTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportMetadataQueryTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "13-export-lifecycle.md"
+    },
+    {
+      "id": "MID-24",
+      "title": "Browse export history",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-24",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ExportHistoryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/ExportLifecycleTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportMetadataQueryTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "13-export-lifecycle.md"
+    },
+    {
+      "id": "MID-25",
+      "title": "Delete a finished export and its download",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-25",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ExportHistoryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/ExportLifecycleTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportMetadataQueryTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "13-export-lifecycle.md"
+    },
+    {
+      "id": "MID-26",
+      "title": "Verify a completed export's download bytes",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-26",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ExportHistoryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobOperationsService.cs",
+        "../../tests/Pulse.Tests/Api/ExportLifecycleTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportMetadataQueryTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "13-export-lifecycle.md"
+    },
+    {
+      "id": "MID-27",
+      "title": "See event-name usage over a date range",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-27",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ProjectDiscoveryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ProjectDiscoveryService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionStatusPolicy.cs",
+        "../../tests/Pulse.Tests/Api/ProjectDiscoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/DiscoveryBudgetTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "14-discovery-and-observation.md"
+    },
+    {
+      "id": "MID-28",
+      "title": "Explore the string values of an event property",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-28",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ProjectDiscoveryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ProjectDiscoveryService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionStatusPolicy.cs",
+        "../../tests/Pulse.Tests/Api/ProjectDiscoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/DiscoveryBudgetTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "14-discovery-and-observation.md"
+    },
+    {
+      "id": "MID-29",
+      "title": "Diagnose a project's ingestion health",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-29",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ProjectDiscoveryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ProjectDiscoveryService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionStatusPolicy.cs",
+        "../../tests/Pulse.Tests/Api/ProjectDiscoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/DiscoveryBudgetTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "14-discovery-and-observation.md"
+    },
+    {
+      "id": "MID-30",
+      "title": "Open a project overview with useful counts",
+      "plan": "../19-midlevel-feature-user-stories.md#mid-30",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Endpoints/ProjectDiscoveryEndpoints.cs",
+        "../../src/Pulse.Infrastructure/Services/ProjectDiscoveryService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionStatusPolicy.cs",
+        "../../tests/Pulse.Tests/Api/ProjectDiscoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/DiscoveryBudgetTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "14-discovery-and-observation.md"
+    },
+    {
+      "id": "SR-01",
+      "title": "Upgrade an existing database without losing data",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-01",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Schema",
+        "../../src/Pulse.Infrastructure/Migrations",
+        "../../src/Pulse.Api/Database",
+        "../../tests/Pulse.Tests/Infrastructure/DatabaseUpgradeTests.cs",
+        "../../docs/runbooks/database-upgrades.md"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Private legacy copy/fresh database rehearsal passed all 10 migrations, repeated upgrade, preserved backfills, unchanged original, healthy startup, missing required suppression-key refusal and restored-key startup. Evidence: tmp/upgrade-rehearsal-3f15c49d2d924c94af767c40a064c16a/evidence.json."
+      ],
+      "lesson": "03-database-upgrades.md"
+    },
+    {
+      "id": "SR-02",
+      "title": "Give project members viewer, editor, or admin access",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-02",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Auth/ProjectPermissionMatrix.cs",
+        "../../src/Pulse.Api/Auth/ProjectAccessService.cs",
+        "../../src/Pulse.Infrastructure/Services/ProjectMembershipService.cs",
+        "../../tests/Pulse.Tests/Api/ProjectRoleTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ProjectMembershipConcurrencyTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Private legacy copy/fresh database rehearsal passed all 10 migrations, repeated upgrade, preserved backfills, unchanged original, healthy startup, missing required suppression-key refusal and restored-key startup. Evidence: tmp/upgrade-rehearsal-3f15c49d2d924c94af767c40a064c16a/evidence.json."
+      ],
+      "lesson": "08-project-roles.md"
+    },
+    {
+      "id": "SR-03",
+      "title": "Browse a trustworthy management audit trail",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-03",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/FlagMutationService.cs",
+        "../../src/Pulse.Infrastructure/Services/ManagementAuditWriter.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagScheduleService.cs",
+        "../../src/Pulse.Api/Endpoints/FlagGovernanceEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/ManagementAuditEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagMutationTransactionTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ScheduledFlagRolloutTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "15-trustworthy-flag-changes.md"
+    },
+    {
+      "id": "SR-04",
+      "title": "Detect competing feature-flag edits",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-04",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/FlagMutationService.cs",
+        "../../src/Pulse.Infrastructure/Services/ManagementAuditWriter.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagScheduleService.cs",
+        "../../src/Pulse.Api/Endpoints/FlagGovernanceEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/ManagementAuditEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagMutationTransactionTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ScheduledFlagRolloutTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "15-trustworthy-flag-changes.md"
+    },
+    {
+      "id": "SR-05",
+      "title": "Inspect and restore a flag's configuration history",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-05",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/FlagMutationService.cs",
+        "../../src/Pulse.Infrastructure/Services/ManagementAuditWriter.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagScheduleService.cs",
+        "../../src/Pulse.Api/Endpoints/FlagGovernanceEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/ManagementAuditEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagMutationTransactionTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ScheduledFlagRolloutTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "15-trustworthy-flag-changes.md"
+    },
+    {
+      "id": "SR-06",
+      "title": "Schedule a future flag rollout change",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-06",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/FlagMutationService.cs",
+        "../../src/Pulse.Infrastructure/Services/ManagementAuditWriter.cs",
+        "../../src/Pulse.Infrastructure/Services/FlagScheduleService.cs",
+        "../../src/Pulse.Api/Endpoints/FlagGovernanceEndpoints.cs",
+        "../../src/Pulse.Api/Endpoints/ManagementAuditEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/FlagMutationTransactionTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ScheduledFlagRolloutTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "15-trustworthy-flag-changes.md"
+    },
+    {
+      "id": "SR-07",
+      "title": "Retry capture submissions without duplicate admission",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-07",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/QueueAdmissionService.cs",
+        "../../src/Pulse.Infrastructure/Services/CaptureReceiptService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionProcessor.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionLeaseService.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureIdempotencyTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureReceiptTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionLeaseTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "16-admission-identity-and-receipts.md"
+    },
+    {
+      "id": "SR-08",
+      "title": "Follow a capture receipt through processing",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-08",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/QueueAdmissionService.cs",
+        "../../src/Pulse.Infrastructure/Services/CaptureReceiptService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionProcessor.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionLeaseService.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureIdempotencyTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureReceiptTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionLeaseTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "16-admission-identity-and-receipts.md"
+    },
+    {
+      "id": "SR-09",
+      "title": "Limit a project's pending ingestion backlog",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-09",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/QueueAdmissionService.cs",
+        "../../src/Pulse.Infrastructure/Services/CaptureReceiptService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionProcessor.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionLeaseService.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureIdempotencyTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureReceiptTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionLeaseTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "16-admission-identity-and-receipts.md"
+    },
+    {
+      "id": "SR-10",
+      "title": "Retry transient ingestion failures with durable backoff",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-10",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/QueueAdmissionService.cs",
+        "../../src/Pulse.Infrastructure/Services/CaptureReceiptService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionProcessor.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionLeaseService.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureIdempotencyTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureReceiptTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionLeaseTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "17-retries-and-worker-ownership.md"
+    },
+    {
+      "id": "SR-11",
+      "title": "Run two ingestion workers with project ownership",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-11",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/QueueAdmissionService.cs",
+        "../../src/Pulse.Infrastructure/Services/CaptureReceiptService.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionProcessor.cs",
+        "../../src/Pulse.Infrastructure/Services/IngestionLeaseService.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureIdempotencyTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/CaptureReceiptTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionLeaseTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "17-retries-and-worker-ownership.md"
+    },
+    {
+      "id": "SR-12",
+      "title": "Cancel and recover asynchronous exports",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-12",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/ExportOwnershipService.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportSnapshotService.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobProcessor.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportCancellationRecoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/EventExportSnapshotTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "18-recoverable-exports.md"
+    },
+    {
+      "id": "SR-13",
+      "title": "Export a fixed snapshot of event data",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-13",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/ExportOwnershipService.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportSnapshotService.cs",
+        "../../src/Pulse.Infrastructure/Services/ExportJobProcessor.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ExportCancellationRecoveryTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/EventExportSnapshotTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "18-recoverable-exports.md"
+    },
+    {
+      "id": "SR-14",
+      "title": "Retain events for a configured number of days",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-14",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/EventRetentionService.cs",
+        "../../src/Pulse.Api/Endpoints/RetentionEndpoints.cs",
+        "../../src/Pulse.Api/Lifecycle/RetentionWorker.cs",
+        "../../tests/Pulse.Tests/Infrastructure/EventRetentionTests.cs",
+        "../../tests/Pulse.Tests/Api/RetentionApiTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "19-event-retention.md"
+    },
+    {
+      "id": "SR-15",
+      "title": "Erase a person and block known identities from returning",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-15",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/PersonErasureService.cs",
+        "../../src/Pulse.Infrastructure/Services/IdentitySuppressionService.cs",
+        "../../src/Pulse.Api/Endpoints/ErasureEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/PersonErasureWorkflowTests.cs",
+        "../../tests/Pulse.Tests/Api/PersonErasureApiTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Private legacy copy/fresh database rehearsal passed all 10 migrations, repeated upgrade, preserved backfills, unchanged original, healthy startup, missing required suppression-key refusal and restored-key startup. Evidence: tmp/upgrade-rehearsal-3f15c49d2d924c94af767c40a064c16a/evidence.json."
+      ],
+      "lesson": "21-person-erasure.md"
+    },
+    {
+      "id": "SR-16",
+      "title": "Issue project-scoped, expiring personal tokens",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-16",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Api/Auth/RestrictedToken.cs",
+        "../../src/Pulse.Api/Auth/PersonalApiKeyAuthenticationHandler.cs",
+        "../../src/Pulse.Api/Endpoints/AuthEndpoints.cs",
+        "../../tests/Pulse.Tests/Api/ScopedPersonalTokenTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/ScopedTokenUpgradeTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "20-restricted-personal-tokens.md"
+    },
+    {
+      "id": "SR-17",
+      "title": "Trace one capture through the background worker",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-17",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Infrastructure/Services/IngestionTrace.cs",
+        "../../src/Pulse.Api/RequestLoggingMiddleware.cs",
+        "../../tests/Pulse.Tests/Infrastructure/IngestionTraceTests.cs",
+        "../../tests/Pulse.Tests/Api/IngestionTraceApiTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "22-ingestion-tracing.md"
+    },
+    {
+      "id": "SR-18",
+      "title": "Run trends with explicit work budgets",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-18",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Domain/QueryWorkBudget.cs",
+        "../../src/Pulse.Domain/SessionGrouping.cs",
+        "../../src/Pulse.Infrastructure/Services/BoundedQueryService.cs",
+        "../../src/Pulse.Infrastructure/Services/PersonSessionService.cs",
+        "../../src/Pulse.Api/Endpoints/BoundedAnalyticsEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/BoundedAnalyticsLimitTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/BoundedAnalyticsResourceTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures.",
+        "Warmed bounded-versus-legacy measurements are recorded in Lesson 23: bounded used more allocation and time at 10/100/1000 rows; no speedup claim. Exact limits, cancellation, and complete-result semantics have separate passing checks."
+      ],
+      "lesson": "23-bounded-trends.md"
+    },
+    {
+      "id": "SR-19",
+      "title": "Explore activity sessions for a person",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-19",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Domain/QueryWorkBudget.cs",
+        "../../src/Pulse.Domain/SessionGrouping.cs",
+        "../../src/Pulse.Infrastructure/Services/BoundedQueryService.cs",
+        "../../src/Pulse.Infrastructure/Services/PersonSessionService.cs",
+        "../../src/Pulse.Api/Endpoints/BoundedAnalyticsEndpoints.cs",
+        "../../tests/Pulse.Tests/Infrastructure/BoundedAnalyticsLimitTests.cs",
+        "../../tests/Pulse.Tests/Infrastructure/BoundedAnalyticsResourceTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "24-person-sessions.md"
+    },
+    {
+      "id": "SR-20",
+      "title": "Receive in-app alerts for event-count thresholds",
+      "plan": "../20-mid-senior-feature-user-stories.md#sr-20",
+      "status": "verified",
+      "implementation": [
+        "../../src/Pulse.Domain/Entities/HourlyAlerts.cs",
+        "../../src/Pulse.Infrastructure/Services/HourlyAlertService.cs",
+        "../../src/Pulse.Api/Endpoints/HourlyAlertEndpoints.cs",
+        "../../src/Pulse.Api/Scheduling/HourlyAlertWorker.cs",
+        "../../tests/Pulse.Tests/Infrastructure/HourlyAlertTests.cs",
+        "../../tests/Pulse.Tests/Api/HourlyAlertApiTests.cs"
+      ],
+      "verification": [
+        "Final unchanged-source full suites: 656/656 passed in each of two consecutive runs (tmp/bootcamp-final-full-2.trx and tmp/bootcamp-final-full-3.trx). See verification.md for conditions and historical failures."
+      ],
+      "lesson": "25-hourly-alerts.md"
+    }
+  ]
+}

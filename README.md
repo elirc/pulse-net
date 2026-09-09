@@ -1,5 +1,28 @@
 # pulse-net
 
+## Learn software engineering with this project
+
+Follow the **[75-story implementation bootcamp](astradocs/bootcamp/README.md)**
+for the feature implementations, implementation journal, concrete lessons, and
+per-story verification status. Learning content is the primary deliverable.
+
+For a gradual codebase onboarding, open **[AstraDocs](astradocs/README.md)**:
+the same concepts explained through stories, diagrams, annotated code,
+data examples, mentor conversations, and recall cards. Start with three
+small steps, or open the [offline visual walkthrough](astradocs/index.html).
+
+Start with the **[junior-to-senior learning path](docs/learning/README.md)**:
+guided C# and backend chapters, a staged roadmap, 20 exercises, debugging
+labs, and a competency rubric. Each topic connects to real code and asks you
+to predict, implement, test, and explain the result.
+
+New here? Follow [your first session](docs/learning/01-first-session.md),
+then run `./scripts/learning-demo.ps1` against the local API. Study the
+[worked ingestion recovery feature](docs/learning/worked-example-ingestion.md)
+to see authorization, transactions, failure tests, and operations fit together.
+The [review findings](docs/learning/review-findings.md) identify both fixes
+and remaining engineering challenges to practice.
+
 A PostHog/Mixpanel-style product-analytics platform — C#/.NET backend only.
 
 Projects own write keys; SDKs push events to `POST /capture` (async ingestion
@@ -10,8 +33,11 @@ annotations), funnels and retention questions over the event stream — all
 filterable by event/person properties and cohorts. On top of that: user
 accounts with JWT + personal API keys, feature flags with deterministic
 rollout and a `/decide` endpoint, dashboards with one-shot refresh, an
-auto-populated event/property registry, GDPR person deletion, CSV/JSON
-exports (sync + async jobs), rate limiting and health probes.
+auto-populated event/property registry, durable person erasure, CSV/JSON
+exports (sync + async jobs), rate limiting and health probes. The bootcamp adds
+project roles and restricted tokens, versioned flag changes, durable worker
+ownership, fixed-input exports, retention, bounded trends, person sessions, and
+hourly alerts with an in-app notification API.
 
 ## Stack
 
@@ -37,6 +63,7 @@ exports (sync + async jobs), rate limiting and health probes.
 ```bash
 dotnet build
 dotnet test
+dotnet src/Pulse.Api/bin/Debug/net10.0/Pulse.Api.dll db upgrade --database src/Pulse.Api/pulse.db # fresh database only; see upgrade runbook for existing data
 dotnet run --project src/Pulse.Api            # serves the API (SQLite: pulse.db)
 dotnet run --project src/Pulse.Api -- seed    # demo project + 30 days of traffic; prints keys + a demo login
 ```
@@ -57,13 +84,14 @@ The API tables below are a summary; the reference doc has the full shapes.
 
 | Credential | Prefix | Grants |
 | --- | --- | --- |
-| JWT session (`POST /api/auth/login`) | — | Full management API, scoped by project membership |
-| Personal API key | `pk_user_` | Same as a JWT, for scripts/CI (`Authorization: Bearer pk_user_…`); stored hashed, shown once |
+| JWT session (`POST /api/auth/login`) | — | Management API according to current project role; required for personal-key management |
+| Personal API key | `pk_user_` | Current project role; restricted keys also require allowed project, named scope, and unexpired lifetime. Stored hashed, shown once; cannot manage personal keys |
 | Project write key | `pk_live_` | `POST /capture` and `POST /decide` only |
 | Project read key | `rk_live_` | Query endpoints + flag local-evaluation payload via `X-Api-Key` |
 
-Non-members receive `404` (not `403`) for projects they cannot see. All error
-paths return RFC 7807 problem details.
+Non-members receive `404` for projects they cannot see; members with insufficient
+roles receive `403`. See [project permissions](docs/project-permissions.md) for
+the route and token boundaries. Error responses use problem details.
 
 ## API
 
@@ -74,14 +102,15 @@ paths return RFC 7807 problem details.
 | `POST /api/auth/register` `{ email, password, name }` | Create an account; returns a JWT |
 | `POST /api/auth/login` `{ email, password }` | Sign in; returns a JWT |
 | `GET /api/auth/me` | Current user |
-| `POST /api/personal-api-keys` `{ name }` | Create a personal key (plaintext returned once) |
+| `POST /api/personal-api-keys` `{ name }` | Create a legacy unrestricted personal key (JWT only; plaintext returned once) |
+| `POST /api/personal-api-keys/restricted` | Create a key limited by projects, scopes, and expiry (JWT only) |
 | `GET /api/personal-api-keys` / `DELETE …/{id}` | List (masked) / revoke keys |
 
 ### Projects & membership
 
 | Route | Description |
 | --- | --- |
-| `POST /api/projects` `{ name }` | Create a project (creator becomes a member); returns `pk_live_` write + `rk_live_` read keys |
+| `POST /api/projects` `{ name }` | Create a project (creator becomes Admin); returns `pk_live_` write + `rk_live_` read keys |
 | `GET /api/projects` | List projects you belong to |
 | `GET /api/projects/{id}` | Get one project |
 | `POST /api/projects/{id}/members` `{ email }` / `GET …/members` | Invite an existing user / list members |
@@ -113,6 +142,8 @@ poison events to dead-letter storage. Rate limited per write key.
 | --- | --- |
 | `GET /api/ingestion/metrics` | Queue depth, dead letters, lifetime processed counters (no auth, health-style) |
 | `GET /api/projects/{id}/ingestion/dead-letters` | Inspect poison events (member-only) |
+| `GET /api/projects/{id}/ingestion/metrics` | Project queue count, dead letters, and oldest pending age (member-only) |
+| `POST /api/projects/{id}/ingestion/dead-letters/{letterId}/replay` | Atomically requeue one valid stored letter after fixing its cause (member-only, 202) |
 
 Identity rules (PostHog semantics):
 
@@ -131,7 +162,7 @@ Identity rules (PostHog semantics):
 | `GET /api/projects/{id}/persons?limit=&offset=` | Page through persons (distinct ids + JSON properties) |
 | `GET /api/projects/{id}/persons/{personId}` | Get one person |
 | `GET /api/projects/{id}/persons/by-distinct-id/{distinctId}` | Resolve a distinct id |
-| `DELETE /api/projects/{id}/persons/{personId}` | GDPR purge: person + events + distinct ids + cohort rows; returns a deletion receipt |
+| `DELETE /api/projects/{id}/persons/{personId}` | Admin erasure workflow; returns 202 and status URL, pauses project data, suppresses known aliases, invalidates project exports |
 
 ### Analytics & insights
 

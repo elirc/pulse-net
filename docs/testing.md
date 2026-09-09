@@ -1,8 +1,8 @@
 # Testing
 
-`tests/Pulse.Tests` holds all 291 tests — fast unit tests over the pure
+`tests/Pulse.Tests` holds the test suite — fast unit tests over the pure
 domain layer plus full-stack integration tests over the HTTP surface. The
-whole suite runs in well under a minute.
+runtime depends on the machine and configuration.
 
 ```bash
 dotnet test                          # everything
@@ -14,7 +14,7 @@ dotnet test --filter "FullyQualifiedName~QueryEdgeCaseTests"   # one class
 | Folder | Style | What it covers |
 | --- | --- | --- |
 | `Domain/` | Pure unit tests, no host | Property-filter evaluation, cohort rule parsing, flag hashing (incl. rollout boundaries and a golden-value pin of the hash recipe), person-property merge rules, time bucketing, API key generation |
-| `Infrastructure/` | EF-level tests | The `DateTimeOffset` → UTC-ticks converter (SQL ordering/range semantics), demo seeder |
+| `Infrastructure/` | EF-level tests | UTC-tick conversion, migrations, transactional rollback, competing owners, durable recovery, query budgets, and controlled failure interleavings |
 | `Api/` | `WebApplicationFactory` integration tests | Everything else, exercised through real HTTP: auth, projects, capture + ingestion pipeline, identity merging, queries and their edge cases, cohorts, flags, dashboards, exports, the authz matrix, boundaries, hardening and production readiness |
 
 Integration tests are the default here: most behavior worth asserting (authz,
@@ -58,9 +58,10 @@ await TestIngestion.WaitForDrainAsync(client);     // polls /api/ingestion/metri
 it watches the real queue rather than sleeping a fixed interval, tests stay
 fast when the worker is quick and correct when it is not. Dead-lettered rows
 also leave the queue, so the helper works for poison-event tests too — a
-transiently failing row just takes a few extra sweep cycles (the worker
-retries on its 1-second periodic sweep) before it dead-letters and the queue
-reaches zero.
+transiently failing row waits for its persisted retry time before another
+attempt. Recognized SQLite contention uses 1, 2, 4, then 8-second backoff;
+permanent validation errors go directly to dead letters. Zero pending alone
+does not prove success: assert dead-letter state or the expected stored result.
 
 Two other helpers:
 
@@ -87,12 +88,17 @@ Two other helpers:
 
 ## Flakiness policy
 
+Drain timeout errors include the last observed metrics. Use the remaining
+queue depth and counters to distinguish stalled work from slow progress
+before changing a timeout or rerunning a failing test.
+
 The suite runs real background workers, so determinism is a design
 requirement, not an aspiration:
 
-- **No bare sleeps.** Waiting is always condition-based
-  (`WaitForDrainAsync`); the only `Task.Delay` in the suite waits out a
-  rate-limit window that the test itself configured to 1 second.
+- **Prefer observable conditions and controlled clocks.** Drain waits poll
+  metrics; concurrency tests coordinate explicit transaction barriers. The
+  rate-limit recovery test waits out its configured five-second window.
+  Timing measurements and lock probes must state their wall-clock limitations.
 - **Every queue interaction ends drained**, so no test leaks pending work
   into the next test in its class.
 - **Order-dependent behavior must be pinned, not assumed.** When a test
