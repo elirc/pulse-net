@@ -40,3 +40,17 @@ comparisons can never disagree.
 - The converter applies to *every* `DateTimeOffset` in the model
   (`ConfigureConventions`), so no property can accidentally fall back to the
   broken TEXT mapping.
+
+## In the code
+
+- Convention: `src/Pulse.Infrastructure/PulseDbContext.cs:52-60`
+  (`Properties<DateTimeOffset>().HaveConversion<DateTimeOffsetToUtcTicksConverter>()`).
+- Converter: same file, lines 204-210 —
+  `v => v.UtcTicks` / `v => new DateTimeOffset(v, TimeSpan.Zero)`.
+- Composite event indexes: lines 100-101.
+- Export cursors encode `timestamp.UtcTicks`
+  (`src/Pulse.Infrastructure/Services/ExportService.cs:45-47`).
+
+**Check:** explain why `new DateTimeOffset(v, TimeSpan.Zero)` on read makes
+every timestamp come back as `+00:00`, and which test class documents it
+(`tests/Pulse.Tests/Infrastructure/DateTimeOffsetConversionTests.cs`).

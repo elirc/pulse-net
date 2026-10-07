@@ -41,3 +41,31 @@ validation, so both credential styles share one header.
 - Project keys being stored plaintext is a deliberate trade-off: they are
   lookup keys (the row is *found by* the key), lower-privilege, and shown in
   the project response; rotating them would be a schema-trivial follow-up.
+
+## In the code
+
+- Prefixes and generation: `src/Pulse.Domain/ApiKeyGenerator.cs:14-16`;
+  16 bytes from `RandomNumberGenerator.Fill` as lowercase hex (lines 31-36);
+  personal keys stored via `Sha256` (lines 28-29).
+- Header routing: the policy scheme's `ForwardDefaultSelector`
+  (`src/Pulse.Api/Program.cs:49-58`) sends `Bearer pk_user_…` to
+  `PersonalApiKeyAuthenticationHandler`, everything else to JWT.
+- Personal-key lookup by hash:
+  `src/Pulse.Api/Auth/PersonalApiKeyAuthenticationHandler.cs:43-48`.
+- Write key: `api_key` in the body or `X-Api-Key` on capture and decide
+  (`src/Pulse.Api/Endpoints/CaptureEndpoints.cs:23-40`,
+  `FeatureFlagEndpoints.cs:28-35`).
+- Read key: `ProjectAccessService.RequireReadAsync`
+  (`src/Pulse.Api/Auth/ProjectAccessService.cs:58-70`).
+- Unique indexes on `Project.ApiKey`, `Project.ReadKey`,
+  `PersonalApiKey.KeyHash` (`src/Pulse.Infrastructure/PulseDbContext.cs:68`,
+  `70`, `92`).
+
+## Review notes
+
+- `ProjectEndpoints.cs:158` returns both project keys in every project
+  response, so any member can read them. If keys become more sensitive,
+  hash them like personal keys and show them once.
+
+**Check:** for each prefix, name the file and line that first distinguishes
+it at request time.

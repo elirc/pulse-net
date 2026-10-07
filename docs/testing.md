@@ -1,6 +1,7 @@
 # Testing
 
-`tests/Pulse.Tests` holds all 291 tests — fast unit tests over the pure
+`tests/Pulse.Tests` holds all 291 tests (210 `[Fact]`s plus 12 `[Theory]`s
+expanding to 81 cases — countable by text search, see ADR 0005) — fast unit tests over the pure
 domain layer plus full-stack integration tests over the HTTP surface. The
 whole suite runs in well under a minute.
 
@@ -57,10 +58,11 @@ await TestIngestion.WaitForDrainAsync(client);     // polls /api/ingestion/metri
 `pending == 0` (default timeout 15 s, overridable for big batches). Because
 it watches the real queue rather than sleeping a fixed interval, tests stay
 fast when the worker is quick and correct when it is not. Dead-lettered rows
-also leave the queue, so the helper works for poison-event tests too — a
-transiently failing row just takes a few extra sweep cycles (the worker
-retries on its 1-second periodic sweep) before it dead-letters and the queue
-reaches zero.
+also leave the queue, so the helper works for poison-event tests too. A
+transiently failing row is retried on the next processing pass — immediately
+if other rows in its batch succeeded, otherwise on the next signal or the
+worker's 1-second sweep — and dead-letters after its third attempt, at which
+point the queue can reach zero.
 
 Two other helpers:
 
@@ -90,9 +92,11 @@ Two other helpers:
 The suite runs real background workers, so determinism is a design
 requirement, not an aspiration:
 
-- **No bare sleeps.** Waiting is always condition-based
-  (`WaitForDrainAsync`); the only `Task.Delay` in the suite waits out a
-  rate-limit window that the test itself configured to 1 second.
+- **No bare sleeps.** Waiting is condition-based: `WaitForDrainAsync`
+  polls every 20 ms (`TestIngestion.cs:25`) and `ExportTests.WaitForJobAsync`
+  polls job status every 25 ms (`ExportTests.cs:270-285`). The only fixed
+  sleep, `Task.Delay(1.5 s)` at `BoundaryTests.cs:230`, waits out a
+  rate-limit window the test configured to 1 second (lines 210-211).
 - **Every queue interaction ends drained**, so no test leaks pending work
   into the next test in its class.
 - **Order-dependent behavior must be pinned, not assumed.** When a test

@@ -51,3 +51,18 @@ Because capture is asynchronous, the harness pairs this with
 - SQLite is not the production engine for a system like this at scale;
   anything Postgres-specific would need a different harness. For this
   codebase SQLite *is* the shipped engine, so fidelity is total.
+
+## In the code
+
+- Connection string and keep-alive: `tests/Pulse.Tests/PulseApiFactory.cs:21-27`
+  (`Data Source=pulse-tests-{Guid:N};Mode=Memory;Cache=Shared`, opened in the
+  constructor) and disposal at lines 43-48.
+- Drain helper: `tests/Pulse.Tests/TestIngestion.cs:13-29` — polls
+  `/api/ingestion/metrics` every 20 ms, default 15 s deadline, throws
+  `TimeoutException`.
+- The 291 figure can be checked statically: 210 `[Fact]` methods, plus 12
+  `[Theory]` methods expanding to 41 `[InlineData]` rows and 2 x 20
+  `[MemberData]` rows in `AuthzMatrixTests.cs` — 210 + 41 + 40 = 291.
+
+**Check:** reproduce the 291 count with a text search over `tests/` before
+running anything; if it differs, the docs are stale.

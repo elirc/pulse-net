@@ -45,3 +45,22 @@ a database.
 - Moving to a columnar store later (the PostHog path: ClickHouse) would
   replace the in-memory half with SQL aggregation; the domain-layer semantics
   and their tests would remain the spec.
+
+## In the code
+
+- The seam: `QueryService.LoadEventsAsync`
+  (`src/Pulse.Infrastructure/Services/QueryService.cs:256` onward). SQL part:
+  `ProjectId`, the name predicate, `Timestamp >= from`, `<= to` or `< to`
+  when `endExclusive`, optional `PersonId != null` (lines 266-277),
+  projected to `QueryEvent` and materialized (lines 279-281). Without
+  filters the slice is returned as-is (lines 283-286).
+- In memory: filters split by target (event / person / cohort,
+  lines 288-290); person filters load the project's whole
+  `Persons` property map (lines 292-298).
+- Deterministic funnel tie-break: `OrderBy(Timestamp).ThenBy(stepIndex)`
+  (lines 172-173); breakdown ordering by count then ordinal key
+  (lines 114-115).
+
+**Check:** name the line where a query over a large project would first
+allocate memory proportional to the number of matching events, and the line
+where person filters add a cost proportional to the project's persons.

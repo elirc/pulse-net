@@ -15,8 +15,8 @@ for. Offset scans also get linearly slower as the offset grows.
 ## Decision
 
 `GET /export/events` and `GET /export/persons` return an opaque cursor:
-base64 of `"{UtcTicks}:{Guid:N}"` of the last row scanned. Pages are ordered
-by `(Timestamp, Id)` — a total order, since the Guid tiebreaks equal
+base64 of `"{UtcTicks}:{Guid:N}"` of the last row scanned. Event pages are
+ordered by `(Timestamp, Id)` and person pages by `(CreatedAt, Id)` — a total order, since the Guid tiebreaks equal
 timestamps — and the next page resumes with
 
 ```sql
@@ -49,3 +49,33 @@ count.
   Backdated events (a client-supplied older timestamp arriving mid-export)
   can land behind an already-passed cursor and be missed — accepted, matching
   how warehouse syncs treat late data.
+
+## In the code
+
+- Encode / decode: `src/Pulse.Infrastructure/Services/ExportService.cs:45-76`.
+- Resume predicate and ordering for events: lines 118-130
+  (`Timestamp > after || (Timestamp == after && Id > afterId)`, then
+  `OrderBy(Timestamp).ThenBy(Id).Take(limit + 1)`); persons order by
+  `CreatedAt, Id` (lines 179-180).
+- `MaxPageSize = 1000` (line 34); the job processor uses `PageSize = 1000`
+  and `MaxRows = 50_000` (`ExportJobProcessor.cs:40-42`).
+- Header name `X-Next-Cursor`: `src/Pulse.Api/Endpoints/ExportEndpoints.cs:14`.
+- Mid-scan stability test:
+  `tests/Pulse.Tests/Api/BoundaryTests.cs:107`
+  (`ExportCursor_NeitherSkipsNorDuplicates_WhenRowsArriveMidScan`); invalid
+  cursor -> 400: `ExportTests.cs:90`.
+
+## Review notes
+
+- **Out-of-range ticks escape the 400 path (by reading; untested).**
+  `TryDecodeCursor` parses the ticks with `long.TryParse` and then calls
+  `new DateTimeOffset(ticks, TimeSpan.Zero)` (line 70) inside a `try` that
+  only catches `FormatException` (line 73). A crafted cursor such as base64
+  of `"-1:<guid>"` parses as a valid `long` but makes the constructor throw
+  `ArgumentOutOfRangeException`, which is not caught here, so the request
+  reaches the global exception handler instead of returning 400. Range-check
+  the ticks against `DateTimeOffset.MinValue/MaxValue.UtcTicks` or catch
+  `ArgumentOutOfRangeException`, and add a test.
+
+**Check:** write the base64 cursor you would add to `ExportTests` to prove
+this, and the status you expect after the fix.

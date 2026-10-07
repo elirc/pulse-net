@@ -34,3 +34,33 @@ with a parameterized matrix over 20 representative routes.
   shapes don't differ between "no such project" and "not your project".
 - Uniformity is the hard part: one endpoint answering 403 would re-open the
   leak, so the authz matrix test exists to make regressions loud.
+
+## In the code
+
+- The rule: `ProjectAccessService.RequireMemberAsync`
+  (`src/Pulse.Api/Auth/ProjectAccessService.cs:36-51`) — a 401 problem when
+  no user id can be read from the principal (lines 38-45), otherwise one
+  `AnyAsync` over `ProjectMemberships` and `Results.NotFound()` on a miss
+  (lines 47-50).
+- The read-key variant `RequireReadAsync` (line 58 onward) accepts the
+  project's `rk_live_` key via `X-Api-Key` only when the caller is *not*
+  otherwise authenticated (line 61); an authenticated caller falls back to
+  membership.
+- Call sites: `RequireMemberAsync` appears 44 times across
+  `src/Pulse.Api/Endpoints/*.cs`; searching `src/Pulse.Api` for `403` or
+  `Forbid` finds only the explanatory comment at `ProjectAccessService.cs:11`.
+- The matrix: `tests/Pulse.Tests/Api/AuthzMatrixTests.cs` — a
+  `TheoryData<string, string, string?>` of 20 `(method, path, body)` rows
+  (from line 28) driving two `[MemberData]` theories (lines 54 and 69), so
+  40 executed cases.
+
+## Review notes
+
+- The guarantee rests on handler discipline: each endpoint must call the
+  guard before touching project data, and a new endpoint not added to the
+  matrix would not be caught. An endpoint filter on the
+  `/api/projects/{projectId}` route group would make the rule structural.
+
+**Check:** pick any endpoint in `src/Pulse.Api/Endpoints/` and confirm its
+first database access happens *after* the `RequireMemberAsync` /
+`RequireReadAsync` early return.
